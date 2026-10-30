@@ -206,7 +206,7 @@ struct BuildProgressView: View {
             }
             .background(Color(nsColor: .textBackgroundColor))
             .clipShape(RoundedRectangle(cornerRadius: 8))
-            .onChange(of: model.logs.count) { proxy.scrollTo("bottom", anchor: .bottom) }
+            .onChange(of: model.logs.last?.id) { proxy.scrollTo("bottom", anchor: .bottom) }
         }
     }
 

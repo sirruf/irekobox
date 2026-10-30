@@ -30,6 +30,9 @@ final class BuildViewModel {
     var error: String?
     var builtTag: String?
 
+    @ObservationIgnored private var pending: [String] = []
+    @ObservationIgnored private var flushTask: Task<Void, Never>?
+
     init(engine: any ContainerEngine) { self.engine = engine }
 
     var reference: String {
@@ -68,6 +71,9 @@ final class BuildViewModel {
     // MARK: - Stream consumption
 
     private func consume(_ stream: AsyncThrowingStream<String, Error>, successTag: String?) async {
+        flushTask?.cancel()
+        flushTask = nil
+        pending.removeAll(keepingCapacity: true)
         phase = .running
         logs = []; currentStage = ""; step = 0; total = 0
         succeeded = false; error = nil; builtTag = nil
@@ -76,6 +82,7 @@ final class BuildViewModel {
             for try await line in stream {
                 append(line)
             }
+            flush()
             if let errLine = logs.last(where: { $0.text.hasPrefix("Error") || $0.text.hasPrefix("error") }) {
                 fail(with: errLine.text)
             } else {
@@ -83,6 +90,7 @@ final class BuildViewModel {
                 builtTag = successTag
             }
         } catch {
+            flush()
             fail(with: logs.last(where: { isErrorLine($0.text) })?.text ?? error.localizedDescription)
         }
         phase = .finished
@@ -102,30 +110,56 @@ final class BuildViewModel {
         return lower.hasPrefix("error") || lower.contains("unsupported")
     }
 
-    /// Internal (not private) so progress parsing can be unit-tested.
+    /// Internal (not private) so batching and progress parsing can be tested.
     func append(_ line: String) {
-        logs.append(LogLine(text: line))
-        if logs.count > 4000 { logs.removeFirst(logs.count - 4000) }
-        parse(line)
+        pending.append(line)
+        // Bound a burst even when a ready stream outpaces the flush task.
+        if pending.count >= 500 { flush(); return }
+        guard flushTask == nil else { return }
+        flushTask = Task { @MainActor [weak self] in
+            do { try await Task.sleep(for: .milliseconds(100)) } catch { return }
+            self?.flush()
+        }
+    }
+
+    func flush() {
+        flushTask?.cancel()
+        flushTask = nil
+        guard !pending.isEmpty else { return }
+        var progress = Progress(stage: currentStage, step: step, total: total)
+        for line in pending { parse(line, into: &progress) }
+        logs.append(contentsOf: pending.map { LogLine(text: $0) })
+        pending.removeAll(keepingCapacity: true)
+        // Slack avoids shifting four thousand elements after every line.
+        if logs.count > 4400 { logs.removeFirst(logs.count - 4000) }
+        if currentStage != progress.stage { currentStage = progress.stage }
+        if step != progress.step { step = progress.step }
+        if total != progress.total { total = progress.total }
+    }
+
+    private struct Progress {
+        var stage: String
+        var step: Int
+        var total: Int
     }
 
     private static let stepRegex = try! NSRegularExpression(pattern: #"(\d+)/(\d+)\]"#)
 
-    private func parse(_ line: String) {
+    private func parse(_ line: String, into progress: inout Progress) {
         let range = NSRange(line.startIndex..., in: line)
         if let match = Self.stepRegex.firstMatch(in: line, range: range),
            let kRange = Range(match.range(at: 1), in: line),
            let nRange = Range(match.range(at: 2), in: line),
            let k = Int(line[kRange]), let n = Int(line[nRange]) {
-            step = max(step, k)
-            total = max(total, n)
+            progress.step = max(progress.step, k)
+            progress.total = max(progress.total, n)
         }
         if let bracket = line.range(of: "] ") {
-            currentStage = String(line[bracket.upperBound...])
+            progress.stage = String(line[bracket.upperBound...])
         } else if line.contains("exporting to") {
-            currentStage = String(localized: "exporting image")
+            progress.stage = String(localized: "exporting image")
         } else if line.contains("pushing") || line.contains("pushed") {
-            currentStage = String(localized: "pushing layers")
+            progress.stage = String(localized: "pushing layers")
         }
     }
 }
