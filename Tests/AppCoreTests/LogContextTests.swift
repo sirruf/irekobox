@@ -84,7 +84,18 @@ final class LogContextTests: XCTestCase {
         XCTAssertEqual(model.buffer.entries.last?.note?.containerID, "shop-api-1")
     }
 
-    func testModelAddsExplanationAfterTheError() {
+    func testNotesThatTrimTheBufferRecountRetainedProblems() {
+        let model = LogViewerModel(capacity: 2)
+        model.follow(["shop-api-1"])
+        model.observe(states(), at: t0)
+        model.ingest(["ERROR old", "INFO newer"], at: t0)
+        XCTAssertEqual(model.problemCount, 1)
+        model.observe(states(api: false), at: t0.addingTimeInterval(1))
+        XCTAssertEqual(model.buffer.entries.count, 2)
+        XCTAssertEqual(model.problemCount, 0, "the note evicted the oldest error")
+    }
+
+    func testModelAddsExplanationAfterTheError() async throws {
         let model = LogViewerModel()
         model.follow(["shop-web-1"])
         model.observe(states(), at: t0)
@@ -95,6 +106,7 @@ final class LogContextTests: XCTestCase {
         XCTAssertEqual(model.problemCount, 1)
 
         model.filter.warningsOnly = true
+        try await Task.sleep(for: .milliseconds(350))
         XCTAssertEqual(model.visibleEntries.count, 2, "the note stays with the error")
         XCTAssertEqual(model.problemCount, 1, "notes aren't problems")
     }

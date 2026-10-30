@@ -13,7 +13,7 @@ final class LogTextViewTests: XCTestCase {
         return (coordinator, textView)
     }
 
-    func testAppendsOnlyNewLinesAndHonoursFilter() {
+    func testAppendsOnlyNewLinesAndHonoursFilter() async throws {
         let model = LogViewerModel()
         model.showTimestamps = false
         let (coordinator, textView) = makeView(model)
@@ -27,6 +27,7 @@ final class LogTextViewTests: XCTestCase {
         XCTAssertEqual(textView.string, "one\ntwo\nthree\n")
 
         model.filter.query = "t"
+        try await Task.sleep(for: .milliseconds(350))
         coordinator.update()
         XCTAssertEqual(textView.string, "two\nthree\n")
 

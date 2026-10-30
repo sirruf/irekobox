@@ -1,8 +1,8 @@
 import Foundation
 
 /// One log line with the time it arrived and a guessed severity.
-struct LogEntry: Identifiable, Equatable {
-    enum Level: Int, Comparable {
+struct LogEntry: Identifiable, Equatable, Sendable {
+    enum Level: Int, Comparable, Sendable {
         case info, warning, error
         static func < (lhs: Level, rhs: Level) -> Bool { lhs.rawValue < rhs.rawValue }
     }
@@ -18,13 +18,13 @@ struct LogEntry: Identifiable, Equatable {
 
 /// A line the app adds to a log: what happened to a container, or why an
 /// error probably happened. `containerID` links to that container's logs.
-struct LogNote: Equatable {
+struct LogNote: Equatable, Sendable {
     var containerID: String?
     var linkTitle: String?
 }
 
 /// What a log view shows.
-struct LogFilter: Equatable {
+struct LogFilter: Equatable, Sendable {
     var query = ""
     var warningsOnly = false
 
@@ -40,11 +40,14 @@ struct LogFilter: Equatable {
 /// exceeded (trimmed in chunks so appends stay amortized O(1)).
 struct LogBuffer {
     let capacity: Int
+    let byteCapacity: Int
+    private var byteCount = 0
     private(set) var entries: [LogEntry] = []
     private var nextID = 0
 
-    init(capacity: Int = 50_000) {
+    init(capacity: Int = 50_000, byteCapacity: Int = 32 * 1024 * 1024) {
         self.capacity = max(1, capacity)
+        self.byteCapacity = max(1, byteCapacity)
     }
 
     /// ID of the oldest line still kept (everything below was dropped).
@@ -54,27 +57,49 @@ struct LogBuffer {
     mutating func append(_ lines: [String], at time: Date = Date()) -> [LogEntry] {
         let added = lines.map { line -> LogEntry in
             defer { nextID += 1 }
+            let line = Self.bounded(line, bytes: byteCapacity)
+            byteCount += line.utf8.count
             return LogEntry(id: nextID, time: time, text: line, level: Self.level(of: line))
         }
         entries.append(contentsOf: added)
-        // Trim with slack so we don't shift the array on every append.
-        if entries.count > capacity + capacity / 10 {
-            entries.removeFirst(entries.count - capacity)
-        }
+        trim()
         return added
     }
 
     /// Add a line of the app's own after the container's output.
     @discardableResult
     mutating func appendNote(_ text: String, _ note: LogNote, at time: Date = Date()) -> LogEntry {
+        let text = Self.bounded(text, bytes: byteCapacity)
         let entry = LogEntry(id: nextID, time: time, text: text, level: .info, note: note)
+        byteCount += text.utf8.count
         nextID += 1
         entries.append(entry)
+        trim()
         return entry
     }
 
     mutating func clear() {
         entries.removeAll()
+        byteCount = 0
+    }
+
+    private mutating func trim() {
+        // Trim with slack so we don't shift the array on every append.
+        guard entries.count > capacity + capacity / 10 || byteCount > byteCapacity + byteCapacity / 10 else { return }
+        var drop = 0
+        while drop < entries.count && (entries.count - drop > capacity || byteCount > byteCapacity) {
+            byteCount -= entries[drop].text.utf8.count
+            drop += 1
+        }
+        entries.removeFirst(drop)
+    }
+
+    /// Keep the newest bytes of an oversized line, starting on a UTF-8 boundary.
+    static func bounded(_ text: String, bytes: Int) -> String {
+        guard text.utf8.count > bytes else { return text }
+        var tail = text.utf8.suffix(bytes)
+        while let first = tail.first, first & 0xC0 == 0x80 { tail = tail.dropFirst() }
+        return String(decoding: tail, as: UTF8.self)
     }
 
     func visible(_ filter: LogFilter) -> [LogEntry] {
@@ -108,5 +133,37 @@ struct LogBuffer {
             if warningWords.contains(String(word)) { sawWarning = true }
         }
         return sawWarning ? .warning : .info
+    }
+}
+
+/// The ingestion batch is bounded too: a burst can't retain arbitrary output
+/// before the next flush. Like the displayed buffer, keep the newest lines.
+struct LogPending {
+    let capacity: Int
+    let byteCapacity: Int
+    private(set) var lines: [String] = []
+    private var byteCount = 0
+
+    init(capacity: Int = 5_000, byteCapacity: Int = 4 * 1024 * 1024) {
+        self.capacity = max(1, capacity)
+        self.byteCapacity = max(1, byteCapacity)
+    }
+
+    mutating func append(_ line: String) {
+        let line = LogBuffer.bounded(line, bytes: byteCapacity)
+        lines.append(line)
+        byteCount += line.utf8.count
+        guard lines.count > capacity + capacity / 10 || byteCount > byteCapacity + byteCapacity / 10 else { return }
+        var drop = 0
+        while drop < lines.count && (lines.count - drop > capacity || byteCount > byteCapacity) {
+            byteCount -= lines[drop].utf8.count
+            drop += 1
+        }
+        lines.removeFirst(drop)
+    }
+
+    mutating func removeAll() {
+        lines.removeAll(keepingCapacity: true)
+        byteCount = 0
     }
 }

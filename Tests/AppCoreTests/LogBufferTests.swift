@@ -3,6 +3,32 @@ import XCTest
 
 final class LogBufferTests: XCTestCase {
 
+    func testByteLimitKeepsNewestWholeUTF8AndBoundsNotes() {
+        var buffer = LogBuffer(capacity: 100, byteCapacity: 12)
+        buffer.append(["aaaaaa", "bbbbbb", "cccccc"])
+        XCTAssertEqual(buffer.entries.map(\.text), ["bbbbbb", "cccccc"])
+        buffer.append([String(repeating: "界", count: 20)])
+        XCTAssertLessThanOrEqual(buffer.entries.reduce(0) { $0 + $1.text.utf8.count }, 13)
+        XCTAssertEqual(buffer.entries.last?.text, "界界界界")
+        XCTAssertFalse(buffer.entries.last?.text.contains("�") ?? true)
+        for _ in 0..<100 { buffer.appendNote("note", LogNote()) }
+        XCTAssertLessThanOrEqual(buffer.entries.reduce(0) { $0 + $1.text.utf8.count }, 13)
+        buffer.clear()
+        buffer.append(["after clear"])
+        XCTAssertEqual(buffer.entries.map(\.text), ["after clear"])
+    }
+
+    func testPendingBacklogIsBoundedByLinesAndBytes() {
+        var pending = LogPending(capacity: 10, byteCapacity: 30)
+        for index in 0..<1000 { pending.append("\(index)界界界") }
+        XCTAssertLessThanOrEqual(pending.lines.count, 11)
+        XCTAssertLessThanOrEqual(pending.lines.reduce(0) { $0 + $1.utf8.count }, 33)
+        XCTAssertEqual(pending.lines.last, "999界界界")
+        pending.removeAll()
+        pending.append("new")
+        XCTAssertEqual(pending.lines, ["new"])
+    }
+
     func testLevels() {
         XCTAssertEqual(LogBuffer.level(of: "ERROR FATAL: heap out of memory"), .error)
         XCTAssertEqual(LogBuffer.level(of: "level=error msg=boom"), .error)

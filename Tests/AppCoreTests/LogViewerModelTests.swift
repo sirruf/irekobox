@@ -5,16 +5,18 @@ import ContainerKit
 @MainActor
 final class LogViewerModelTests: XCTestCase {
 
-    func testFilterChangesRebuildAndRecount() {
+    func testFilterChangesRebuildAndRecount() async throws {
         let model = LogViewerModel()
         model.ingest(["INFO start", "WARN memory high", "ERROR out of memory"])
         let generation = model.generation
 
         model.filter.query = "memory"
+        try await Task.sleep(for: .milliseconds(350))
         XCTAssertEqual(model.matchCount, 2)
         XCTAssertGreaterThan(model.generation, generation)
 
         model.filter.warningsOnly = true
+        try await Task.sleep(for: .milliseconds(350))
         XCTAssertEqual(model.visibleEntries.map(\.text), ["WARN memory high", "ERROR out of memory"])
 
         // New matching lines add to the count without a rebuild.
@@ -22,6 +24,38 @@ final class LogViewerModelTests: XCTestCase {
         model.ingest(["WARN memory again"])
         XCTAssertEqual(model.matchCount, 3)
         XCTAssertEqual(model.generation, before)
+    }
+
+    func testSearchDebouncesAndOnlyAppliesLatestVersion() async throws {
+        let model = LogViewerModel()
+        model.ingest(["alpha", "beta", "alphabet"])
+        let before = model.generation
+        model.filter.query = "alpha"
+        XCTAssertEqual(model.generation, before, "typing does not rebuild the text synchronously")
+        model.filter.query = "beta"
+        model.ingest(["beta arrived during search"])
+        try await Task.sleep(for: .milliseconds(350))
+        XCTAssertEqual(model.visibleEntries.map(\.text), ["beta", "beta arrived during search"])
+        XCTAssertEqual(model.matchCount, 2)
+        XCTAssertEqual(model.generation, before + 1)
+        model.filter.query = "alpha"
+        model.clear()
+        try await Task.sleep(for: .milliseconds(350))
+        XCTAssertTrue(model.visibleEntries.isEmpty, "a stale search must not restore cleared lines")
+        XCTAssertEqual(model.matchCount, 0)
+    }
+
+    func testStreamFlushesWhileOpenAndFlushesTheLastBatch() async throws {
+        let (lines, continuation) = AsyncThrowingStream<String, Error>.makeStream()
+        let model = LogViewerModel()
+        let task = Task { await model.stream(lines: lines, flushEvery: .milliseconds(20)) }
+        continuation.yield("first")
+        try await Task.sleep(for: .milliseconds(80))
+        XCTAssertEqual(model.buffer.entries.map(\.text), ["first"])
+        continuation.yield("last")
+        continuation.finish()
+        await task.value
+        XCTAssertEqual(model.buffer.entries.map(\.text), ["first", "last"])
     }
 
     func testUnseenCountsOnlyWhilePaused() {

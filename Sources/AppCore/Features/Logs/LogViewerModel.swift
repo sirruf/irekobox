@@ -10,7 +10,7 @@ import ContainerKit
 final class LogViewerModel {
     private(set) var buffer: LogBuffer
     var filter = LogFilter() {
-        didSet { if filter != oldValue { rebuild() } }
+        didSet { if filter != oldValue { search() } }
     }
     var showTimestamps = true {
         didSet { if showTimestamps != oldValue { rebuild() } }
@@ -29,7 +29,13 @@ final class LogViewerModel {
     /// Bumped when the text must be redrawn from scratch.
     private(set) var generation = 0
 
-    @ObservationIgnored private var pending: [String] = []
+    /// The last completed search; appends use it until the next search commits.
+    private(set) var displayFilter = LogFilter()
+    @ObservationIgnored private var filteredEntries: [LogEntry] = []
+    @ObservationIgnored private var searchTask: Task<Void, Never>?
+    @ObservationIgnored private var searchVersion = 0
+    @ObservationIgnored private var pending = LogPending()
+    @ObservationIgnored private var flushTask: Task<Void, Never>?
     /// Restarts and health changes around this log.
     @ObservationIgnored private var context = LogContext()
 
@@ -59,54 +65,41 @@ final class LogViewerModel {
     }
 
     private func addNote(_ text: String, _ note: LogNote, at time: Date) {
+        let firstKept = buffer.firstID
         let entry = buffer.appendNote(text, note, at: time)
-        if !isFollowing && filter.matches(entry) { unseen += 1 }
+        if buffer.firstID != firstKept { filteredEntries.removeAll { $0.id < buffer.firstID } }
+        if displayFilter.matches(entry) {
+            if displayFilter != LogFilter() { filteredEntries.append(entry) }
+            if !isFollowing { unseen += 1 }
+            matchCount += LogBuffer.matchCount(displayFilter.query, in: [entry])
+        }
+        if buffer.firstID != firstKept {
+            matchCount = LogBuffer.matchCount(displayFilter.query, in: visibleEntries)
+            problemCount = buffer.entries.count { $0.level >= .warning && $0.note == nil }
+        }
     }
 
     init(capacity: Int = 50_000) {
         buffer = LogBuffer(capacity: capacity)
     }
 
-    var visibleEntries: [LogEntry] { buffer.visible(filter) }
+    var visibleEntries: [LogEntry] { displayFilter == LogFilter() ? buffer.entries : filteredEntries }
 
     /// Follow any line stream (e.g. kubectl logs) until the calling task is cancelled.
     func stream(lines: AsyncThrowingStream<String, Error>, flushEvery interval: Duration = .milliseconds(100)) async {
         streamError = nil
-        let ticker = Task { @MainActor [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: interval)
-                self?.flush()
-            }
-        }
-        defer { ticker.cancel() }
+        defer { flush() }
         do {
-            for try await line in lines { pending.append(line) }
+            for try await line in lines { enqueue(line, flushEvery: interval) }
         } catch is CancellationError {
         } catch {
             streamError = error.localizedDescription
         }
-        flush()
     }
 
     /// Follow `id`'s output until the calling task is cancelled.
     func stream(engine: any ContainerEngine, id: String, flushEvery interval: Duration = .milliseconds(100)) async {
-        streamError = nil
-        let ticker = Task { @MainActor [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: interval)
-                self?.flush()
-            }
-        }
-        defer { ticker.cancel() }
-        do {
-            for try await line in engine.containerLogs(id, follow: true) {
-                pending.append(line)
-            }
-        } catch is CancellationError {
-        } catch {
-            streamError = error.localizedDescription
-        }
-        flush()
+        await self.stream(lines: engine.containerLogs(id, follow: true), flushEvery: interval)
     }
 
     /// Width of the `web  | ` labels while following several containers
@@ -123,19 +116,13 @@ final class LogViewerModel {
         let width = sources.map(\.label.count).max() ?? 0
         labelWidth = width
         labels = sources.map(\.label)
-        let ticker = Task { @MainActor [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: interval)
-                self?.flush()
-            }
-        }
-        defer { ticker.cancel() }
+        defer { flush() }
         let followers = sources.map { source in
             let prefix = source.label.padding(toLength: width, withPad: " ", startingAt: 0) + " | "
             return Task { @MainActor [weak self] () -> String? in
                 do {
                     for try await line in engine.containerLogs(source.id, follow: true) {
-                        self?.pending.append(prefix + line)
+                        self?.enqueue(prefix + line, flushEvery: interval)
                     }
                 } catch is CancellationError {
                 } catch {
@@ -151,23 +138,42 @@ final class LogViewerModel {
         } onCancel: {
             for follower in followers { follower.cancel() }
         }
-        flush()
     }
 
     /// Move pending lines into the buffer (also used by tests).
     func ingest(_ lines: [String], at time: Date = Date()) {
-        pending.append(contentsOf: lines)
+        for line in lines { pending.append(line) }
         flush(at: time)
     }
 
+    private func enqueue(_ line: String, flushEvery interval: Duration) {
+        pending.append(line)
+        guard flushTask == nil else { return }
+        flushTask = Task { @MainActor [weak self] in
+            do { try await Task.sleep(for: interval) } catch { return }
+            self?.flush()
+        }
+    }
+
     private func flush(at time: Date = Date()) {
-        guard !pending.isEmpty else { return }
-        let added = buffer.append(pending, at: time)
-        pending.removeAll(keepingCapacity: true)
-        let shown = added.filter(filter.matches)
+        flushTask?.cancel()
+        flushTask = nil
+        guard !pending.lines.isEmpty else { return }
+        let firstKept = buffer.firstID
+        let added = buffer.append(pending.lines, at: time)
+        pending.removeAll()
+        if buffer.firstID != firstKept {
+            filteredEntries.removeAll { $0.id < buffer.firstID }
+        }
+        let shown = added.filter { $0.id >= buffer.firstID && displayFilter.matches($0) }
+        if displayFilter != LogFilter() { filteredEntries.append(contentsOf: shown) }
         if !isFollowing { unseen += shown.count }
-        matchCount += LogBuffer.matchCount(filter.query, in: shown)
+        matchCount += LogBuffer.matchCount(displayFilter.query, in: shown)
         problemCount += added.count { $0.level >= .warning }
+        if buffer.firstID != firstKept {
+            matchCount = LogBuffer.matchCount(displayFilter.query, in: visibleEntries)
+            problemCount = buffer.entries.count { $0.level >= .warning && $0.note == nil }
+        }
         // An explanation goes after the batch with the error it explains.
         for entry in added {
             if let (text, note) = context.explain(entry.text, level: entry.level, at: time) {
@@ -177,7 +183,14 @@ final class LogViewerModel {
     }
 
     func clear() {
+        searchTask?.cancel()
+        searchVersion &+= 1
+        flushTask?.cancel()
+        flushTask = nil
+        pending.removeAll()
         buffer.clear()
+        filteredEntries = []
+        displayFilter = filter
         rebuild()
     }
 
@@ -190,8 +203,42 @@ final class LogViewerModel {
         showTimestamps ? "\(Self.timeFormatter.string(from: entry.time))  \(entry.text)" : entry.text
     }
 
+    /// Debounce typing, filter/count off the main actor, then publish only the
+    /// current version. Lines arriving during the search are merged at commit.
+    private func search() {
+        searchTask?.cancel()
+        searchVersion &+= 1
+        let version = searchVersion
+        searchTask = Task { @MainActor [weak self] in
+            do { try await Task.sleep(for: .milliseconds(200)) } catch { return }
+            guard let self else { return }
+            let filter = self.filter
+            let entries = buffer.entries
+            let lastID = entries.last?.id ?? -1
+            let work = Task.detached(priority: .userInitiated) {
+                let shown = entries.filter { !Task.isCancelled && filter.matches($0) }
+                return (shown, LogBuffer.matchCount(filter.query, in: shown))
+            }
+            let (shown, count) = await withTaskCancellationHandler {
+                await work.value
+            } onCancel: {
+                work.cancel()
+            }
+            guard !Task.isCancelled, version == searchVersion else { return }
+            let removed = shown.prefix { $0.id < buffer.firstID }
+            let fresh = buffer.entries.reversed().prefix { $0.id > lastID }.reversed().filter(filter.matches)
+            filteredEntries = Array(shown.dropFirst(removed.count)) + fresh
+            displayFilter = filter
+            matchCount = count - LogBuffer.matchCount(filter.query, in: Array(removed))
+                + LogBuffer.matchCount(filter.query, in: fresh)
+            unseen = 0
+            generation &+= 1
+            searchTask = nil
+        }
+    }
+
     private func rebuild() {
-        matchCount = LogBuffer.matchCount(filter.query, in: visibleEntries)
+        matchCount = LogBuffer.matchCount(displayFilter.query, in: visibleEntries)
         problemCount = buffer.entries.count { $0.level >= .warning && $0.note == nil }
         unseen = 0
         generation &+= 1

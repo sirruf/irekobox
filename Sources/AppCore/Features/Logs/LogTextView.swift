@@ -48,7 +48,7 @@ struct LogTextView: NSViewRepresentable {
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         // Read the observed properties here so SwiftUI re-runs this on change.
-        _ = (model.generation, model.buffer.entries.count, model.buffer.firstID, model.isFollowing, model.wrapLines)
+        _ = (model.generation, model.buffer.entries.count, model.buffer.firstID, model.buffer.entries.last?.id, model.isFollowing, model.wrapLines)
         context.coordinator.openContainer = openContainer
         context.coordinator.update()
     }
@@ -128,7 +128,7 @@ struct LogTextView: NSViewRepresentable {
             guard let newest = model.buffer.entries.last?.id, newest > lastRenderedID else { return }
             let fresh = model.buffer.entries.reversed().prefix { $0.id > lastRenderedID }.reversed()
             let text = NSMutableAttributedString()
-            for entry in fresh where model.filter.matches(entry) {
+            for entry in fresh where model.displayFilter.matches(entry) {
                 let line = attributed(entry)
                 rendered.append((entry.id, line.length))
                 text.append(line)
@@ -208,7 +208,7 @@ struct LogTextView: NSViewRepresentable {
                 line.addAttribute(.foregroundColor, value: LogLabelColor.color(for: label, in: model.labels),
                                   range: NSRange(location: start, length: width))
             }
-            let query = model.filter.query
+            let query = model.displayFilter.query
             if !query.isEmpty {
                 let body = line.string as NSString
                 var range = NSRange(location: start, length: body.length - start)
