@@ -62,12 +62,15 @@ extension DockerBackend {
 /// Adapts a `ContainerEngine` to `DockerBackend`.
 public struct EngineBackend: DockerBackend {
     let engine: any ContainerEngine
+    private let images = ImageListing()
     public init(engine: any ContainerEngine) { self.engine = engine }
 
     public func systemStatus() async throws -> SystemStatus? { try await engine.systemStatus() }
     public func systemProperties() async throws -> String { try await engine.systemProperties() }
     public func listContainers(all: Bool) async throws -> [Container] { try await engine.listContainers(all: all) }
-    public func listImages() async throws -> [ContainerImage] { try await engine.listImages() }
+    public func listImages() async throws -> [ContainerImage] {
+        try await images.list { [engine] in try await engine.listImages() }
+    }
     public func startContainer(_ id: String) async throws { try await engine.startContainer(id) }
     public func stopContainer(_ id: String, timeout: Int32?, signal: String?) async throws {
         try await engine.stopContainer(id, timeout: timeout, signal: signal)
@@ -83,7 +86,7 @@ public struct EngineBackend: DockerBackend {
     public func createVolume(_ name: String) async throws { try await engine.createVolume(name) }
     public func deleteVolume(_ name: String) async throws { try await engine.deleteVolume(name) }
     public func pullImage(_ reference: String, platform: String?) -> AsyncThrowingStream<String, Error> {
-        engine.pullImageWithProgress(reference, platform: platform)
+        images.changing(engine.pullImageWithProgress(reference, platform: platform))
     }
     public func containerLogs(_ id: String, follow: Bool) -> AsyncThrowingStream<String, Error> {
         engine.containerLogs(id, follow: follow)
@@ -114,16 +117,26 @@ public struct EngineBackend: DockerBackend {
         try await engine.exportContainer(id, to: path)
     }
     public func startServices() async throws { try await engine.startServices() }
-    public func deleteImage(_ reference: String, force: Bool) async throws { try await engine.deleteImage(reference, force: force) }
-    public func pruneImages(all: Bool) async throws { try await engine.pruneImages(all: all) }
+    public func deleteImage(_ reference: String, force: Bool) async throws {
+        try await images.changing { try await engine.deleteImage(reference, force: force) }
+    }
+    public func pruneImages(all: Bool) async throws {
+        try await images.changing { try await engine.pruneImages(all: all) }
+    }
     public func inspectImage(_ reference: String) async throws -> ImageDetails { try await engine.inspectImage(reference) }
-    public func tagImage(_ source: String, as target: String) async throws { try await engine.tagImage(source, as: target) }
+    public func tagImage(_ source: String, as target: String) async throws {
+        try await images.changing { try await engine.tagImage(source, as: target) }
+    }
     public func saveImages(_ references: [String], platform: String?, to path: String) async throws {
         try await engine.saveImages(references, platform: platform, to: path)
     }
-    public func loadImages(from path: String) async throws -> String { try await engine.loadImages(from: path) }
+    public func loadImages(from path: String) async throws -> String {
+        try await images.changing { try await engine.loadImages(from: path) }
+    }
     public func pushImage(_ reference: String) -> AsyncThrowingStream<String, Error> { engine.pushImage(reference) }
-    public func buildImage(_ options: BuildOptions) -> AsyncThrowingStream<String, Error> { engine.buildImage(options) }
+    public func buildImage(_ options: BuildOptions) -> AsyncThrowingStream<String, Error> {
+        images.changing(engine.buildImage(options))
+    }
     public func listVolumes() async throws -> [Volume] { try await engine.listVolumes() }
     public func createVolume(_ name: String, labels: [String: String], size: String?) async throws {
         try await engine.createVolume(name, labels: labels, size: size, options: [:])
@@ -132,6 +145,69 @@ public struct EngineBackend: DockerBackend {
     public func listNetworks() async throws -> [Network] { try await engine.listNetworks() }
     public func createNetwork(_ spec: NetworkSpec) async throws { try await engine.createNetwork(spec) }
     public func deleteNetwork(_ name: String) async throws { try await engine.deleteNetwork(name) }
+}
+
+/// Listing images is slow (`container image ls` reads every image's size: a
+/// quarter of a second with some fifty images), and Compose asks about every
+/// service's image at once. Concurrent callers share one listing, unless an
+/// image changed through this backend since it began.
+final class ImageListing: Sendable {
+    private let state = State()
+
+    private actor State {
+        var generation = 0
+        var running: (generation: Int, task: Task<[ContainerImage], Error>)?
+
+        func task(_ fetch: @escaping @Sendable () async throws -> [ContainerImage]) -> Task<[ContainerImage], Error> {
+            if let running, running.generation == generation { return running.task }
+            let task = Task { try await fetch() }
+            running = (generation, task)
+            return task
+        }
+
+        func finished(_ task: Task<[ContainerImage], Error>) {
+            if running?.task == task { running = nil }
+        }
+
+        func changed() { generation += 1 }
+    }
+
+    func list(_ fetch: @escaping @Sendable () async throws -> [ContainerImage]) async throws -> [ContainerImage] {
+        let task = await state.task(fetch)
+        defer { Task { await state.finished(task) } }
+        return try await task.value
+    }
+
+    /// Run a change to the images; listings begun before it ends aren't shared.
+    func changing<T: Sendable>(_ body: () async throws -> T) async throws -> T {
+        await state.changed()
+        do {
+            let result = try await body()
+            await state.changed()
+            return result
+        } catch {
+            await state.changed()
+            throw error
+        }
+    }
+
+    func changing(_ stream: AsyncThrowingStream<String, Error>) -> AsyncThrowingStream<String, Error> {
+        let state = state
+        return AsyncThrowingStream { continuation in
+            let task = Task {
+                await state.changed()
+                do {
+                    for try await line in stream { continuation.yield(line) }
+                    await state.changed()
+                    continuation.finish()
+                } catch {
+                    await state.changed()
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
 }
 
 /// Facts about this host and app that `version`/`info` report.

@@ -91,19 +91,27 @@ public enum HumanDuration {
 enum DockerTime {
     static let zero = "0001-01-01T00:00:00Z"
 
-    static func string(_ date: Date?) -> String {
-        guard let date else { return zero }
+    // Made once: building a formatter costs far more than using it, and image
+    // and container lists parse a date per item. ISO8601DateFormatter is
+    // thread-safe.
+    nonisolated(unsafe) private static let fractional: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter.string(from: date)
+        return formatter
+    }()
+    nonisolated(unsafe) private static let whole: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }()
+
+    static func string(_ date: Date?) -> String {
+        guard let date else { return zero }
+        return fractional.string(from: date)
     }
 
     static func parse(_ text: String) -> Date? {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let date = formatter.date(from: text) { return date }
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter.date(from: text)
+        fractional.date(from: text) ?? whole.date(from: text)
     }
 
     /// A point in time as filters give it: Unix seconds (fractions allowed),

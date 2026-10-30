@@ -182,17 +182,24 @@ public enum ContainersAPI {
         guard let imageText = config.Image, let reference = ImageReference(imageText) else {
             throw DockerAPIError.badParameter("invalid reference format: \(config.Image ?? "")")
         }
-        let images = try await backend.listImages()
-        let present = images.contains { image in
-            ImageReference(image.reference)?.canonical == reference.canonical
-                || (reference.digest != nil && image.digest == reference.digest)
-        }
-        guard present else { throw DockerAPIError(404, "No such image: \(reference.familiar)") }
+        guard try await isLocal(reference, backend) else { throw DockerAPIError(404, "No such image: \(reference.familiar)") }
 
         let warnings = try await make(config, name: name, platform: request.query["platform"], backend, fillVolumes: true)
         await renames.remember(name, Renames.Spec(body: body, platform: request.query["platform"]))
         let created = try await directory.resolve(name)
         return .json(CreateResponse(Id: created.id, Warnings: warnings), status: 201)
+    }
+
+    /// Whether the image is here. Inspecting one image is cheap; listing them
+    /// all (which reads every image's size) took a quarter of a second with
+    /// some fifty images, so the list is only the fallback: for digests, and
+    /// to be sure before a 404.
+    private static func isLocal(_ reference: ImageReference, _ backend: DockerBackend) async throws -> Bool {
+        if reference.digest == nil, (try? await backend.inspectImage(reference.canonical)) != nil { return true }
+        return try await backend.listImages().contains { image in
+            ImageReference(image.reference)?.canonical == reference.canonical
+                || (reference.digest != nil && image.digest == reference.digest)
+        }
     }
 
     /// Create `name` from a Docker create request; the warnings to pass on.
@@ -395,7 +402,7 @@ public enum ContainersAPI {
                     let exit = await run.value
                     if condition == "removed" {
                         while (try? await directory.resolve(name)) != nil {
-                            try await Task.sleep(for: .milliseconds(200))
+                            try await Task.sleep(for: .milliseconds(50))
                         }
                     }
                     if let exit { return exit.code }
@@ -432,7 +439,7 @@ public enum ContainersAPI {
         }
         if condition == "removed" {
             while (try? await directory.resolve(name)) != nil {
-                try await Task.sleep(for: .milliseconds(200))
+                try await Task.sleep(for: .milliseconds(50))
             }
         }
         return exit.code

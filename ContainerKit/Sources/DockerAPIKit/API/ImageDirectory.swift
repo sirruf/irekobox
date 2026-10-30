@@ -35,10 +35,12 @@ struct ImageDirectory: Sendable {
         let images = try await backend.listImages().filter { !$0.isSystem }
         let grouped = Dictionary(grouping: images, by: \.digest)
         return grouped.map { digest, references in
-            DockerImage(id: digest.hasPrefix("sha256:") ? digest : "sha256:\(digest)",
-                        references: references.sorted { $0.reference < $1.reference })
+            let image = DockerImage(id: digest.hasPrefix("sha256:") ? digest : "sha256:\(digest)",
+                                    references: references.sorted { $0.reference < $1.reference })
+            return (image, image.created ?? .distantPast)
         }
-        .sorted { ($0.created ?? .distantPast) > ($1.created ?? .distantPast) }
+        .sorted { $0.1 > $1.1 }
+        .map(\.0)
     }
 
     /// By reference (`alpine`, `alpine:3.20`, `docker.io/library/alpine:latest`,

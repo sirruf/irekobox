@@ -60,11 +60,12 @@ public final class DockerAPIServer: @unchecked Sendable {
                 return
             }
 
+            let started = ContinuousClock.now
             let response = await router.handle(request)
             // A body spilled to disk is gone once the response is written.
             defer { if let file = request.bodyFile { HTTPRequest.removeBodyFile(file) } }
             if Self.trace {
-                FileHandle.standardError.write(Data("[docker-api] \(request.method) \(request.target) -> \(response.status)\(request.wantsUpgrade ? " (upgrade)" : "")\n".utf8))
+                FileHandle.standardError.write(Data("[docker-api] \(Self.clock()) \(request.method) \(request.target) -> \(response.status)\(request.wantsUpgrade ? " (upgrade)" : ""), \(Self.milliseconds(since: started)) ms\n".utf8))
             }
             if case .hijack(let handler) = response.body {
                 // Bytes past the request belong to the raw stream.
@@ -170,6 +171,18 @@ public final class DockerAPIServer: @unchecked Sendable {
     private static let crlf = Data([0x0D, 0x0A])
     /// DOCKER_API_TRACE=1: one line per request on stderr (conformance runs).
     private static let trace = ProcessInfo.processInfo.environment["DOCKER_API_TRACE"] == "1"
+
+    private static func milliseconds(since start: ContinuousClock.Instant) -> Int {
+        let elapsed = ContinuousClock.now - start
+        return Int(elapsed.components.seconds * 1000 + elapsed.components.attoseconds / 1_000_000_000_000_000)
+    }
+
+    /// Wall-clock time with milliseconds, to line trace entries up with other logs.
+    private static func clock() -> String {
+        let now = Date().timeIntervalSince1970
+        let seconds = Int(now) % 60
+        return String(format: "%02d.%03d", seconds, Int((now - now.rounded(.down)) * 1000))
+    }
 
     private static func httpDate() -> String {
         let formatter = DateFormatter()
