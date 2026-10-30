@@ -117,11 +117,13 @@ final class StackImportTests: XCTestCase {
     // MARK: - 2. bindMounts detects the postgres HOST BIND MOUNT (drives BindMountHint)
 
     @MainActor
-    func testBindMountDetectionFindsPostgresHostMount() {
+    func testBindMountDetectionFindsPostgresHostMount() async {
         let vm = makeVM()
 
         let project = ComposeProject(name: entry.name, entry: entry, directory: nil,
                                      configFiles: [Self.composePath], containers: [])
+        // Views read the cached parse; reload() fills it before they show.
+        _ = await vm.parsedFile(at: Self.composePath)
         let viaEntry = vm.bindMounts(of: project)
         XCTAssertFalse(viaEntry.isEmpty,
                        "compose has a postgres host bind mount → must be non-empty (drives BindMountHint)")
@@ -142,9 +144,9 @@ final class StackImportTests: XCTestCase {
     // MARK: - 3. plan(for:) yields ordered container steps, ports, volume/network create, warnings
 
     @MainActor
-    func testPlanProducesOrderedStepsPortsAndWarnings() throws {
+    func testPlanProducesOrderedStepsPortsAndWarnings() async throws {
         let vm = makeVM()
-        let (plan, directory) = try vm.plan(for: entry)
+        let (plan, directory) = try await vm.plan(for: entry)
 
         // Working directory must be the compose file's folder (relative bind/build
         // sources resolve there).

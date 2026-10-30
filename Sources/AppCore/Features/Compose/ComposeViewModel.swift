@@ -35,14 +35,22 @@ final class ComposeViewModel {
 
     func project(named name: String) -> ComposeProject? { projects.first { $0.name == name } }
 
-    func reload() async {
+    /// Rebuild the projects from the saved entries and the containers: the
+    /// ones given (the engine model's, on a change it saw), else listed here.
+    func reload(containers given: [Container]? = nil) async {
         let entries = StackStore.load()
+        // Compose files that are new or changed are read off the main actor.
+        for entry in entries { _ = await parsedFile(at: entry.composePath) }
         let containers: [Container]
-        do {
-            containers = try await engine.listContainers(all: true)
-        } catch {
-            self.error = error.localizedDescription
-            containers = []
+        if let given {
+            containers = given
+        } else {
+            do {
+                containers = try await engine.listContainers(all: true)
+            } catch {
+                self.error = error.localizedDescription
+                containers = []
+            }
         }
         projects = ComposeProject.all(entries: entries, containers: containers)
         fileChanges = Dictionary(uniqueKeysWithValues: projects.compactMap { project in
@@ -55,13 +63,14 @@ final class ComposeViewModel {
     /// written, isn't running here, or the file can't be read.
     private func fileChange(of project: ComposeProject) -> FileChange? {
         guard let entry = project.entry, !project.containers.isEmpty,
-              let (plan, _) = try? plan(for: entry) else { return nil }
+              let cached = parsedFiles[entry.composePath],
+              let parsed = try? cached.result.get(),
+              let plan = try? plan(parsed, for: entry) else { return nil }
         let count = Self.changes(plan, existing: project.containers).filter {
             if case .keep = $0 { return false } else { return true }
         }.count
         guard count > 0 else { return nil }
-        let saved = (try? FileManager.default.attributesOfItem(atPath: entry.composePath))?[.modificationDate] as? Date
-        return FileChange(services: count, saved: saved)
+        return FileChange(services: count, saved: cached.stamp?.modified)
     }
 
     /// Bring the project in line with its compose file as saved.
@@ -125,9 +134,64 @@ final class ComposeViewModel {
 
     // MARK: - Reading the compose file
 
+    /// A file's modification date and size: the same, and it is the same file.
+    struct FileStamp: Equatable, Sendable {
+        let modified: Date?
+        let size: Int
+
+        /// `nil` when there is no file at `path`.
+        static func of(_ path: String) -> FileStamp? {
+            guard let attributes = try? FileManager.default.attributesOfItem(atPath: path) else { return nil }
+            return FileStamp(modified: attributes[.modificationDate] as? Date,
+                             size: (attributes[.size] as? NSNumber)?.intValue ?? 0)
+        }
+    }
+
+    /// A compose file as parsed, good while its stamp is the file's.
+    struct ParsedFile: Sendable {
+        let stamp: FileStamp?
+        let result: Result<ParsedCompose, Error>
+    }
+
+    /// Parsed compose files by path. Views read it, so a parse that lands
+    /// shows up in them.
+    private var parsedFiles: [String: ParsedFile] = [:]
+    /// Parses in flight by path.
+    @ObservationIgnored private var parsing: [String: Task<ParsedFile, Never>] = [:]
+    /// How many files were parsed (for tests).
+    @ObservationIgnored private(set) var parseCount = 0
+
+    /// The file at `path` as parsed, read again once it changed on disk.
+    /// Parsing runs off the main actor; a parse in flight is shared.
+    func parsedFile(at path: String) async -> Result<ParsedCompose, Error> {
+        let stamp = FileStamp.of(path)
+        if let cached = parsedFiles[path], cached.stamp == stamp { return cached.result }
+        if let running = parsing[path] { return await running.value.result }
+        let task = Task.detached(priority: .userInitiated) {
+            ParsedFile(stamp: stamp, result: Result { try ComposeParser().parse(contentsOf: URL(fileURLWithPath: path)) })
+        }
+        parsing[path] = task
+        let parsed = await task.value
+        parsing[path] = nil
+        parseCount += 1
+        parsedFiles[path] = parsed
+        return parsed.result
+    }
+
+    /// The parsed file for a view: what is cached, while a new or changed
+    /// file is parsed in the background (the view is drawn again when it lands).
+    func cachedFile(at path: String) -> ParsedCompose? {
+        let cached = parsedFiles[path]
+        let stale = cached.map { $0.stamp != FileStamp.of(path) } ?? true
+        if stale, parsing[path] == nil {
+            Task { await parsedFile(at: path) }
+        }
+        return (try? cached?.result.get()) ?? nil
+    }
+
     func file(of project: ComposeProject) -> ComposeFile? {
         guard let path = project.composePath else { return nil }
-        return try? ComposeParser().parse(contentsOf: URL(fileURLWithPath: path)).file
+        return cachedFile(at: path)?.file
     }
 
     func services(of project: ComposeProject) -> [ComposeService] {
@@ -149,15 +213,24 @@ final class ComposeViewModel {
 
     /// What we'd run for a project added here (from `text` instead of the
     /// file when given). Each run carries a hash of its settings.
-    func plan(for entry: StackEntry, text: String? = nil) throws -> (plan: ComposePlan, directory: URL) {
-        let url = URL(fileURLWithPath: entry.composePath)
-        let parsed = try text.map { try ComposeParser().parse($0) } ?? ComposeParser().parse(contentsOf: url)
+    func plan(for entry: StackEntry, text: String? = nil) async throws -> (plan: ComposePlan, directory: URL) {
+        let parsed: ParsedCompose
+        if let text {
+            parsed = try ComposeParser().parse(text)
+        } else {
+            parsed = try await parsedFile(at: entry.composePath).get()
+        }
+        return (try plan(parsed, for: entry), URL(fileURLWithPath: entry.composePath).deletingLastPathComponent())
+    }
+
+    /// The plan for `parsed` as the compose file of `entry`.
+    private func plan(_ parsed: ParsedCompose, for entry: StackEntry) throws -> ComposePlan {
         var plan = try ComposePlanner().plan(parsed, projectName: entry.name,
                                              extraRunLabels: ComposeProject.runLabels(for: entry),
                                              localDomain: localDomain)
         plan = Self.stamped(plan)
         if !takenNames.isEmpty { plan = Self.dropping(takenNames, from: plan) }
-        return (plan, url.deletingLastPathComponent())
+        return plan
     }
 
     // MARK: - Changes to a running project
@@ -225,7 +298,7 @@ final class ComposeViewModel {
     func preview(_ project: ComposeProject, text: String) -> Result<(plan: ComposePlan, changes: [Change]), Error> {
         Result {
             if let entry = project.entry {
-                let (plan, _) = try plan(for: entry, text: text)
+                let plan = try plan(try ComposeParser().parse(text), for: entry)
                 return (plan, Self.changes(plan, existing: project.containers))
             }
             let parsed = try ComposeParser().parse(text)
@@ -245,7 +318,7 @@ final class ComposeViewModel {
                 return
             }
             try await prepareRun(excluding: project.name)
-            let (plan, directory) = try plan(for: entry)
+            let (plan, directory) = try await plan(for: entry)
             let changes = Self.changes(plan, existing: project.containers)
             var stale: [String] = []
             var services: Set<String> = []
@@ -337,7 +410,7 @@ final class ComposeViewModel {
             }
             if let entry = project.entry {
                 try await prepareRun(excluding: project.name)
-                let (plan, directory) = try plan(for: entry)
+                let (plan, directory) = try await plan(for: entry)
                 let missing = Self.missing(from: plan, existing: Set(project.containers.map(\.id)))
                 if missing.steps.contains(where: { $0.kind == .run }) {
                     try Self.check(await runner.up(missing, workingDirectory: directory))
@@ -365,13 +438,13 @@ final class ComposeViewModel {
         guard let entry = project.entry else { return }
         await perform(project) {
             try await prepareRun(excluding: project.name)
-            let (plan, directory) = try plan(for: entry)
+            let (plan, directory) = try await plan(for: entry)
             onHandAction(true, project.containers.map(\.id))
             await runner.down(plan, workingDirectory: directory)
             try await removeLeftovers(project, keeping: [])
             await reload()
             try await prepareRun(excluding: project.name)
-            let (fresh, _) = try self.plan(for: entry)
+            let (fresh, _) = try await self.plan(for: entry)
             try Self.check(await runner.up(fresh, workingDirectory: directory))
         }
     }
@@ -380,7 +453,7 @@ final class ComposeViewModel {
     func removeContainers(_ project: ComposeProject) async {
         await perform(project) {
             onHandAction(true, project.containers.map(\.id))
-            if let entry = project.entry, let (plan, directory) = try? plan(for: entry) {
+            if let entry = project.entry, let (plan, directory) = try? await plan(for: entry) {
                 await runner.down(plan, workingDirectory: directory)
             }
             try await removeLeftovers(project, keeping: [])

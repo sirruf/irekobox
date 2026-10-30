@@ -54,7 +54,10 @@ struct ComposeView: View {
             }
         }
         .task { await app.model.observe([.containers]) }
-        .task(id: app.model.containers) { await model?.reload() }
+        // The model's containers are what changed: no second listing.
+        .task(id: app.model.containers) {
+            await model?.reload(containers: app.model.isLoading(.containers) ? nil : app.model.containers)
+        }
         .sheet(item: $newProject) { template in
             NewProjectSheet(initial: template) { chosen, folder in create(chosen, in: folder) }
         }

@@ -17,7 +17,7 @@ final class ComposeViewModelTests: XCTestCase {
         return folder
     }
 
-    func testBindMountDetection() throws {
+    func testBindMountDetection() async throws {
         let yaml = """
         services:
           db:
@@ -37,7 +37,9 @@ final class ComposeViewModelTests: XCTestCase {
         let project = ComposeProject(name: "x", entry: StackEntry(name: "x", composePath: file.path),
                                      directory: nil, configFiles: [file.path], containers: [])
         // Only the two host-path binds; the named `cache` volume is excluded.
-        XCTAssertEqual(makeVM().bindMounts(of: project), ["db: /Users/me/data", "web: ./site"])
+        let model = makeVM()
+        _ = await model.parsedFile(at: file.path)
+        XCTAssertEqual(model.bindMounts(of: project), ["db: /Users/me/data", "web: ./site"])
     }
 
     /// A folder opens its compose file; the name is the folder's, or `name:`.
@@ -51,6 +53,33 @@ final class ComposeViewModelTests: XCTestCase {
         XCTAssertEqual(ComposeViewModel.projectName(for: file), "shop-app")
         try "name: Store\nservices:\n  web:\n    image: nginx\n".write(to: file, atomically: true, encoding: .utf8)
         XCTAssertEqual(ComposeViewModel.projectName(for: file), "store")
+    }
+
+    /// A compose file is parsed once per version, off the main actor, and
+    /// read again when it changes; views see the last parse meanwhile.
+    func testParsedFilesAreCachedByModificationDateAndSize() async throws {
+        let file = try temporaryFolder().appending(path: "compose.yaml")
+        try "services:\n  web:\n    image: nginx\n".write(to: file, atomically: true, encoding: .utf8)
+        let model = makeVM()
+        let entry = StackEntry(name: "x", composePath: file.path)
+        let project = ComposeProject(name: "x", entry: entry, directory: nil, configFiles: [file.path], containers: [])
+
+        XCTAssertNil(model.file(of: project), "nothing cached yet; a parse starts in the background")
+        _ = await model.parsedFile(at: file.path)
+        XCTAssertEqual(model.file(of: project)?.services.keys.sorted(), ["web"])
+        _ = await model.parsedFile(at: file.path)
+        XCTAssertEqual(model.parseCount, 1, "an unchanged file is not parsed again")
+
+        try "services:\n  web:\n    image: nginx\n  db:\n    image: postgres\n".write(to: file, atomically: true, encoding: .utf8)
+        XCTAssertEqual(model.file(of: project)?.services.count, 1, "the last parse serves the view while the new one runs")
+        _ = await model.parsedFile(at: file.path)
+        XCTAssertEqual(model.file(of: project)?.services.count, 2)
+        XCTAssertEqual(model.parseCount, 2)
+
+        let (plan, directory) = try await model.plan(for: entry)
+        XCTAssertEqual(plan.steps.filter { $0.kind == .run }.compactMap(\.service).sorted(), ["db", "web"])
+        XCTAssertEqual(directory.path, file.deletingLastPathComponent().path)
+        XCTAssertEqual(model.parseCount, 2, "the plan reads the cached parse")
     }
 
     /// Start runs only what's missing; existing containers are started instead.
