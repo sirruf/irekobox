@@ -37169,6 +37169,34 @@
         }
       }
     },
+    "Registers the helper with macOS again. Fixes a helper that stopped starting after Irekobox was replaced by another build." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registriert das Hilfsprogramm erneut bei macOS. Behebt ein Hilfsprogramm, das nicht mehr startet, nachdem Irekobox durch einen anderen Build ersetzt wurde."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ヘルパーを macOS に再登録します。Irekobox を別のビルドに置き換えた後にヘルパーが起動しなくなった場合に修復します。"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Заново регистрирует помощник в macOS. Помогает, если он перестал запускаться после замены Irekobox другой сборкой."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "向 macOS 重新注册辅助程序。可修复 Irekobox 被替换为其他构建后辅助程序无法启动的问题。"
+          }
+        }
+      }
+    },
     "Registries" : {
       "localizations" : {
         "de" : {
@@ -37995,6 +38023,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "正在重新命名…"
+          }
+        }
+      }
+    },
+    "Repair Background Helper" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hintergrund-Hilfsprogramm reparieren"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "バックグラウンドヘルパーを修復"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Восстановить фоновый помощник"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "修复后台辅助程序"
           }
         }
       }

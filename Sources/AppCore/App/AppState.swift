@@ -149,6 +149,8 @@ public final class AppState {
     var windowRequest: WindowRequest?
     /// Human-readable agent status for Settings.
     private(set) var agentStatus = ""
+    /// The background helper failed to start; Settings offers to repair it.
+    private(set) var agentNeedsRepair = false
 
     /// Keep polling (and, later, restart policies and the Docker socket)
     /// running in a background agent when the app is closed.
@@ -277,6 +279,7 @@ public final class AppState {
         }
         let client = await agentConnector.connect(configuration: Self.agentConfiguration())
         agentStatus = agentConnector.statusDescription
+        agentNeedsRepair = agentConnector.needsRepair
         guard let client else { return }
         client.onDisconnect = { [weak self] in
             Task { @MainActor in await self?.agentLost(client) }
@@ -331,8 +334,19 @@ public final class AppState {
                 await model.setSource(localStore, agentBacked: false)
                 await agentConnector.disable()
                 agentStatus = agentConnector.statusDescription
+                agentNeedsRepair = false
             }
         }
+    }
+
+    /// Register the background helper again and reconnect: what fixes an
+    /// agent launchd refuses to start.
+    public func repairAgent() {
+        guard backgroundAgentEnabled, agent == nil else { return }
+        agentNeedsRepair = false
+        agentStatus = String(localized: "Starting…")
+        agentConnector.forgetRegistration()
+        Task { await connectAgent() }
     }
 
     /// Let the agent drop this client's interests promptly on quit.

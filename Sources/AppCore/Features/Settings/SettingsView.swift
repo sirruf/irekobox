@@ -76,6 +76,12 @@ struct GeneralSettingsPane: View {
                     .accessibilityIdentifier("settings.backgroundAgent")
                 Text(app.agentStatus.isEmpty ? String(localized: "Starting…") : app.agentStatus)
                     .font(.caption).foregroundStyle(.secondary)
+                if app.agentNeedsRepair {
+                    Button("Repair Background Helper") { app.repairAgent() }
+                        .accessibilityIdentifier("settings.repairAgent")
+                    Text("Registers the helper with macOS again. Fixes a helper that stopped starting after Irekobox was replaced by another build.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
                 Toggle("Check for container updates",
                        isOn: Binding(get: { app.updates.isEnabled }, set: { app.updates.isEnabled = $0 }))
                 Text("Once a day, the latest apple/container release is looked up on GitHub.")

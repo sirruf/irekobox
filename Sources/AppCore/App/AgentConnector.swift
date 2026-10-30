@@ -20,6 +20,12 @@ final class AgentConnector {
     }
 
     private(set) var status: Status = .notBundled
+    /// Registration failed or the agent never answered: a fresh registration
+    /// may fix it (Settings offers one).
+    var needsRepair: Bool {
+        if case .failed = status { return true }
+        return false
+    }
     private let log = Logger(subsystem: "com.irekobox.app", category: "agent")
 
     private var bundledExecutable: URL? {
@@ -50,6 +56,16 @@ final class AgentConnector {
                 "Contents/Library/LaunchAgents/\(AgentConstants.plistName)").isFileReadable else {
             status = .notBundled
             return nil
+        }
+        // launchd keeps the code requirement of the copy that registered the
+        // agent. Once that copy is replaced by one signed differently (a build
+        // from source, then a release), every launch of the agent fails until
+        // it is registered again: do that as soon as the bundle changes.
+        let fingerprint = Self.fingerprint(of: executable)
+        if service.status == .enabled,
+           UserDefaults.standard.string(forKey: Self.fingerprintKey) != fingerprint {
+            log.info("app bundle changed since the agent was registered; registering it again")
+            try? await service.unregister()
         }
         do {
             try register()
@@ -98,8 +114,26 @@ final class AgentConnector {
             (client, info) = fresh
         }
         status = .connected(pid: info.pid)
+        UserDefaults.standard.set(fingerprint, forKey: Self.fingerprintKey)
         log.info("connected to agent pid \(info.pid)")
         return client
+    }
+
+    /// Forget which copy registered the agent, so the next `connect`
+    /// registers it again.
+    func forgetRegistration() {
+        UserDefaults.standard.removeObject(forKey: Self.fingerprintKey)
+    }
+
+    private static let fingerprintKey = "agentRegistrationFingerprint"
+
+    /// The agent binary as launchd last saw it: path, build and file identity.
+    private static func fingerprint(of executable: URL) -> String {
+        let attributes = try? FileManager.default.attributesOfItem(atPath: executable.path)
+        let modified = (attributes?[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
+        let size = (attributes?[.size] as? Int) ?? 0
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""
+        return "\(executable.path)|\(build)|\(Int(modified))|\(size)"
     }
 
     private func register() throws {
