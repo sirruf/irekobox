@@ -45,15 +45,19 @@ final class MachinesModel {
 
     /// Machine images already built (`irekobox-machine-…`).
     private(set) var preparedImages: Set<String> = []
+    /// Images on this Mac, from the list the app polls anyway (the screen
+    /// sets this; `refresh` reads it rather than running `image list`).
+    var images: () -> [ContainerImage] = { [] }
+    /// Images this model built itself, in case the list hasn't caught up.
+    private var built: Set<String> = []
 
-    func refresh() async {
-        if let data = try? await cli.data(["image", "list", "--format", "json"]),
-           let images = try? JSONDecoder().decode([ContainerImage].self, from: data) {
-            preparedImages = Set(images.map(\.shortName).filter { $0.hasPrefix("irekobox-machine-") })
-        }
+    /// `reinspect`: read every machine's details again, after a change
+    /// `machine list` doesn't show (settings).
+    func refresh(reinspect: Bool = false) async {
+        preparedImages = Set(images().map(\.shortName).filter { $0.hasPrefix("irekobox-machine-") }).union(built)
         do {
             let before = machines.map { "\($0.id) \($0.isRunning)" }
-            machines = try await repository.list().sorted { $0.id < $1.id }
+            machines = try await repository.list(known: reinspect ? [] : machines).sorted { $0.id < $1.id }
             if loaded, machines.map({ "\($0.id) \($0.isRunning)" }) != before { onChange?() }
             error = nil
         } catch {
@@ -71,7 +75,7 @@ final class MachinesModel {
         } catch {
             self.error = error.localizedDescription
         }
-        await refresh()
+        await refresh(reinspect: true)
     }
 
     func start(_ name: String) async { await perform(name) { try await repository.start(name) } }
@@ -164,6 +168,7 @@ final class MachinesModel {
                 bootImage = MachineImage.preparedTag(for: image)
                 if (try? await cli.data(["image", "inspect", bootImage])) == nil {
                     try await prepare(image, as: bootImage)
+                    built.insert(bootImage)
                 }
             }
             creation = .starting

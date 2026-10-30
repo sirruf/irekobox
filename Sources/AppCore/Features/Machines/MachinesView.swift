@@ -22,9 +22,11 @@ struct MachinesView: View {
         .onAppear {
             guard model == nil else { return }
             let model = MachinesModel(cli: app.cli)
+            model.images = { [app] in app.model.images }
             model.onChange = { [app] in Task { await app.model.refresh([.containers, .images]) } }
             self.model = model
         }
+        .task { await app.model.observe([.containers, .images]) }
         .task(id: model == nil) {
             guard let model else { return }
             while !Task.isCancelled {

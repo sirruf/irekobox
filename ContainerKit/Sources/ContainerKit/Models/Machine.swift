@@ -41,6 +41,13 @@ public struct Machine: Codable, Hashable, Sendable, Identifiable {
 
     public var isRunning: Bool { status == "running" }
 
+    /// Whether `machine list` reports the same for `other` as for this one
+    /// (`inspect` adds the rest, which only changes with these).
+    func sameRow(as other: Machine) -> Bool {
+        status == other.status && cpus == other.cpus && memory == other.memory && diskSize == other.diskSize
+            && ipAddress == other.ipAddress && createdDate == other.createdDate && `default` == other.default
+    }
+
     /// `alpine:latest` from `docker.io/library/alpine:latest`.
     public var imageShortName: String? {
         image.map { $0.reference.split(separator: "/").last.map(String.init) ?? $0.reference }
@@ -73,14 +80,16 @@ public struct MachineRepository: Sendable {
     }
 
     /// Every machine with its details (`list` for which is default, then
-    /// `inspect` for the rest).
-    public func list() async throws -> [Machine] {
+    /// `inspect` for the rest). A machine in `known` whose `list` row hasn't
+    /// changed keeps its details without an `inspect`.
+    public func list(known: [Machine] = []) async throws -> [Machine] {
         let listed = try await cli.decode([Machine].self, ["machine", "list", "--format", "json"])
         guard !listed.isEmpty else { return [] }
+        let kept = listed.compactMap { row in known.first { $0.id == row.id && $0.sameRow(as: row) } }
         // `inspect` takes one name at a time.
         let cli = self.cli
         let detailed = await withTaskGroup(of: Machine?.self) { group in
-            for row in listed {
+            for row in listed where !kept.contains(where: { $0.id == row.id }) {
                 group.addTask { try? await cli.decode([Machine].self, ["machine", "inspect", row.id]).first }
             }
             var result: [Machine] = []
@@ -88,6 +97,7 @@ public struct MachineRepository: Sendable {
             return result
         }
         return listed.map { row in
+            if let machine = kept.first(where: { $0.id == row.id }) { return machine }
             guard let detail = detailed.first(where: { $0.id == row.id }) else { return row }
             return Machine(id: row.id, status: row.status, cpus: row.cpus, memory: row.memory, diskSize: row.diskSize,
                            ipAddress: row.ipAddress, createdDate: row.createdDate, startedDate: detail.startedDate,
