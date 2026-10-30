@@ -56,6 +56,8 @@ public final class AppState {
     var browseVolume: String?
     /// Bumped to open the Settings window from where SwiftUI can.
     var settingsRequest = 0
+    /// Stop or restart the engine, once the main window has asked.
+    var engineRequest: EngineAction?
     /// A folder the next Files tab opens at (Browse Files on a volume).
     var pendingFilesPath: String?
     /// A container page to open once the Containers screen shows.
@@ -445,6 +447,18 @@ public final class AppState {
             lastError = error.localizedDescription
         }
         await refreshSystem()
+    }
+
+    public func restartServices() async {
+        await stopServices()
+        await startServices()
+    }
+
+    func perform(_ action: EngineAction) async {
+        switch action {
+        case .stop: await stopServices()
+        case .restart: await restartServices()
+        }
     }
 }
 

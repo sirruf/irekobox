@@ -126,6 +126,9 @@ public struct RootView: View {
             }
         }
         .onChange(of: app.settingsRequest) { openSettings() }
+        .engineConfirmation(Binding(get: { app.engineRequest }, set: { app.engineRequest = $0 })) { action in
+            Task { await app.perform(action) }
+        }
         .onOpenURL { app.open($0) }
         .onChange(of: app.windowRequest) { _, request in
             switch request {

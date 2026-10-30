@@ -105,6 +105,26 @@ final class LogFileStreamTests: XCTestCase {
         XCTAssertEqual(lines, ["one", "two", "three"])
     }
 
+    func testLongLogStartsAtAWholeLineOfItsTail() async throws {
+        let line = String(repeating: "x", count: 99) + "\n"
+        let count = Int(LogFileStream.tailLimit) / line.utf8.count + 1000
+        let url = try tempLog(String(repeating: line, count: count) + "last\n")
+        var lines: [String] = []
+        for try await line in LogFileStream.lines(of: try FileHandle(forReadingFrom: url), follow: false) {
+            lines.append(line)
+        }
+        XCTAssertEqual(lines.last, "last")
+        XCTAssertLessThan(lines.count, count)
+        XCTAssertTrue(lines.dropLast().allSatisfy { $0.count == 99 }, "no partial first line")
+    }
+
+    func testOverlongLineComesOutInPieces() {
+        let splitter = LineSplitter()
+        let pieces = splitter.append(Data(String(repeating: "y", count: LineSplitter.maxLine * 2 + 5).utf8))
+        XCTAssertEqual(pieces.map(\.count), [LineSplitter.maxLine, LineSplitter.maxLine])
+        XCTAssertEqual(splitter.flush()?.count, 5)
+    }
+
     func testFollowsAppendsAndTruncation() async throws {
         let url = try tempLog("old\n")
         let stream = LogFileStream.lines(of: try FileHandle(forReadingFrom: url), follow: true)

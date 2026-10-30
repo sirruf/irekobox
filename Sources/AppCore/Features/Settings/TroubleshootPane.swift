@@ -12,6 +12,7 @@ struct TroubleshootPane: View {
     @State private var showErrorsOnly = false
     @State private var copied = false
     @State private var isRestarting = false
+    @State private var engineAction: EngineAction?
     @State private var showCheckup = false
 
     private static let periods: [(String, LocalizedStringResource)] = [("10m", "Last 10 minutes"), ("1h", "Last 1 hour"), ("1d", "Last 1 day")]
@@ -86,15 +87,7 @@ struct TroubleshootPane: View {
                 Button(copied ? "Copied" : "Copy Report") { Task { await copyDiagnostics() } }
                     .buttonStyle(.automatic)
                     .help("Versions, engine status, configuration and recent errors, ready for a bug report")
-                Button(isRestarting ? "Restarting…" : "Restart Engine") {
-                    Task {
-                        isRestarting = true
-                        await app.stopServices()
-                        await app.startServices()
-                        isRestarting = false
-                        await load()
-                    }
-                }
+                Button(isRestarting ? "Restarting…" : "Restart Engine") { engineAction = .restart }
                 .buttonStyle(.automatic)
                 .disabled(isRestarting)
                 Spacer()
@@ -104,6 +97,14 @@ struct TroubleshootPane: View {
         }
         .padding(DS.Spacing.l)
         .task(id: period) { await load() }
+        .engineConfirmation($engineAction) { _ in
+            Task {
+                isRestarting = true
+                await app.restartServices()
+                isRestarting = false
+                await load()
+            }
+        }
         .sheet(isPresented: $showCheckup) { AllContainersCheckup() }
         .accessibilityIdentifier("troubleshoot.pane")
     }

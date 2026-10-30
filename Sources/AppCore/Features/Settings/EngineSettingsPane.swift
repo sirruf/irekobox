@@ -5,7 +5,7 @@ import ContainerKit
 /// and the image builder get, the kernel, and disk usage.
 struct EngineSettingsPane: View {
     @Environment(AppState.self) private var app
-    @State private var confirmStop = false
+    @State private var engineAction: EngineAction?
     @State private var config: EngineConfig.Tables = [:]
     @State private var configError: String?
     /// A default was changed since the engine started: it applies on restart.
@@ -45,11 +45,8 @@ struct EngineSettingsPane: View {
         .navigationTitle("Engine")
         .task { await app.model.observe([.system, .diskUsage]) }
         .task(id: app.servicesRunning) { await loadConfig() }
-        .confirmationDialog("Stop the engine?", isPresented: $confirmStop, titleVisibility: .visible) {
-            Button("Stop Engine", role: .destructive) { Task { await app.stopServices() } }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Running containers stop until the engine is started again.")
+        .engineConfirmation($engineAction) { action in
+            Task { action == .restart ? await restart() : await app.stopServices() }
         }
     }
 
@@ -100,8 +97,8 @@ struct EngineSettingsPane: View {
                     ProgressView().controlSize(.small)
                     Text("Restarting…").foregroundStyle(.secondary)
                 } else if app.servicesRunning {
-                    Button("Restart") { Task { await restart() } }
-                    Button("Stop", role: .destructive) { confirmStop = true }
+                    Button("Restart") { engineAction = .restart }
+                    Button("Stop", role: .destructive) { engineAction = .stop }
                 } else {
                     Button("Start Engine") { Task { await app.startServices() } }
                         .buttonStyle(.borderedProminent)
@@ -261,7 +258,7 @@ struct EngineSettingsPane: View {
             if needsRestart {
                 HStack(spacing: DS.Spacing.s) {
                     Text("Saved to ~/.config/container/config.toml. Applies when the engine restarts.")
-                    Button("Restart Now") { Task { await restart() } }
+                    Button("Restart Now") { engineAction = .restart }
                         .buttonStyle(.link)
                         .disabled(isRestarting)
                 }
@@ -313,8 +310,7 @@ struct EngineSettingsPane: View {
 
     private func restart() async {
         isRestarting = true
-        await app.stopServices()
-        await app.startServices()
+        await app.restartServices()
         isRestarting = false
         needsRestart = false
         await loadConfig()

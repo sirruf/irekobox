@@ -8,6 +8,7 @@ struct MachinesView: View {
     @State private var model: MachinesModel?
     @State private var selection: String?
     @State private var showCreate = false
+    @State private var deleteLeftover: Container?
 
     var body: some View {
         Group {
@@ -40,6 +41,15 @@ struct MachinesView: View {
                     .accessibilityIdentifier("machines.new")
             }
         }
+        .confirmationDialog("Delete \(deleteLeftover?.id ?? "")?", isPresented: Binding(
+            get: { deleteLeftover != nil }, set: { if !$0 { deleteLeftover = nil } }), titleVisibility: .visible,
+                            presenting: deleteLeftover) { container in
+            Button("Delete", role: .destructive) {
+                Task { await app.perform { try await app.engine.deleteContainer(container.id, force: true) } }
+            }
+        } message: { _ in
+            Text("The VM stops and its disk is deleted. Files in your home folder stay.")
+        }
         .sheet(isPresented: $showCreate) {
             if let model {
                 NewMachineSheet(model: model) { name in selection = name }
@@ -47,9 +57,51 @@ struct MachinesView: View {
         }
     }
 
+    /// Machine VMs the engine runs but `container machine` no longer lists,
+    /// e.g. after a create that was cut short.
+    private func leftovers(_ model: MachinesModel) -> [Container] {
+        guard model.loaded else { return [] }
+        let known = Set(model.machines.map(\.id))
+        return app.model.containers.filter { $0.isMachine && !known.contains($0.machineName ?? $0.id) }
+    }
+
+    @ViewBuilder
+    private func leftoverPanel(_ model: MachinesModel) -> some View {
+        let leftovers = leftovers(model)
+        if !leftovers.isEmpty {
+            VStack(alignment: .leading, spacing: DS.Spacing.s) {
+                Label("Machine VMs without a machine", systemImage: "exclamationmark.triangle")
+                    .font(.callout.weight(.semibold)).foregroundStyle(Tone.warning.text)
+                Text("The engine runs these, but container no longer lists them as machines, so they can't be opened. They use memory until deleted.")
+                    .font(.callout).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                ForEach(leftovers) { container in
+                    HStack(spacing: DS.Spacing.s) {
+                        StatusDot(tone: container.state.isRunning ? .positive : .neutral)
+                        Text(container.id).font(DS.Font.mono)
+                        Spacer(minLength: DS.Spacing.m)
+                        Button("Delete", role: .destructive) { deleteLeftover = container }
+                    }
+                }
+            }
+            .padding(DS.Spacing.m)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: DS.Radius.panel).fill(Tone.warning.fill.opacity(0.08)))
+            .accessibilityIdentifier("machines.leftovers")
+        }
+    }
+
     @ViewBuilder
     private func content(_ model: MachinesModel) -> some View {
-        if model.loaded && model.machines.isEmpty {
+        if model.loaded && model.machines.isEmpty && !leftovers(model).isEmpty {
+            ScrollView {
+                VStack(alignment: .leading, spacing: DS.Spacing.l) {
+                    leftoverPanel(model)
+                    Button("New Machine…") { showCreate = true }.buttonStyle(.borderedProminent)
+                }
+                .padding(DS.Spacing.l)
+            }
+        } else if model.loaded && model.machines.isEmpty {
             ContentUnavailableView {
                 Label("No Machines", systemImage: "desktopcomputer")
             } description: {
@@ -87,6 +139,7 @@ struct MachinesView: View {
                         .foregroundStyle(DS.accent)
                     }
                     .accessibilityIdentifier("machines.list")
+                    leftoverPanel(model)
                     LearnNote("**Machine or container?** A machine is a full Linux system that boots like a computer and keeps everything you install. Machines reach each other and your containers by name — try `ping \(model.machines.first?.id ?? "name").machine`.")
                 }
                 .padding(DS.Spacing.l)

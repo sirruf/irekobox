@@ -49,6 +49,31 @@ final class HTTPParserTests: XCTestCase {
         XCTAssertEqual(requests.first?.body, Data("hello world".utf8))
     }
 
+    func testChunkedRequestFollowedByAnother() throws {
+        var parser = HTTPParser()
+        let raw = "POST /a HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n3\r\nabc\r\n0\r\n\r\n"
+            + "GET /b HTTP/1.1\r\n\r\n"
+        var requests: [HTTPRequest] = []
+        for piece in [raw.prefix(40), raw.dropFirst(40)] {
+            parser.feed(Data(piece.utf8))
+            while let request = try parser.next() { requests.append(request) }
+        }
+        XCTAssertEqual(requests.map(\.path), ["/a", "/b"])
+        XCTAssertEqual(requests.first?.body, Data("abc".utf8))
+    }
+
+    func testLargeChunkedUploadIsDecodedOnce() throws {
+        var parser = HTTPParser()
+        parser.feed(Data("PUT /x HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n".utf8))
+        let chunk = Data("1000\r\n".utf8) + Data(repeating: 0x61, count: 0x1000) + Data("\r\n".utf8)
+        for _ in 0..<2048 {
+            parser.feed(chunk)
+            XCTAssertNil(try parser.next())
+        }
+        parser.feed(Data("0\r\n\r\n".utf8))
+        XCTAssertEqual(try parser.next()?.body.count, 2048 * 0x1000)
+    }
+
     func testPipelinedRequestsAndLeftoverBytes() throws {
         var parser = HTTPParser()
         let raw = "GET /_ping HTTP/1.1\r\n\r\nGET /version HTTP/1.1\r\n\r\n"
@@ -81,5 +106,11 @@ final class HTTPParserTests: XCTestCase {
         XCTAssertEqual(error("POST /x HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\nzz\r\n")?.status, 400)
         XCTAssertEqual(error("POST /x HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n3\r\nabcXY")?.status, 400)
         XCTAssertEqual(error("GET /" + String(repeating: "a", count: 100) + " HTTP/1.1\r\n", limit: 32)?.status, 431)
+        // A chunk size near Int.max must be refused, not overflow.
+        XCTAssertEqual(error("POST /x HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n1\r\na\r\n7fffffffffffffff\r\n")?.status, 413)
+        XCTAssertEqual(error("POST /x HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n+5\r\n")?.status, 400)
+        XCTAssertEqual(error("POST /x HTTP/1.1\r\nContent-Length: +5\r\n\r\n")?.status, 400)
+        XCTAssertEqual(error("POST /x HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n"
+                             + String(repeating: "X-T: y\r\n", count: 20), limit: 64)?.status, 431)
     }
 }

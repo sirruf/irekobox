@@ -28,6 +28,7 @@ struct ComposeProjectView: View {
     /// Unsaved edits per file, kept while switching tabs.
     @State private var drafts: [String: String] = [:]
     @State private var confirmRemoveContainers = false
+    @State private var confirmRecreate = false
     @State private var confirmRemoveProject = false
     /// The service in the inspector.
     @State private var selected: String?
@@ -97,6 +98,11 @@ struct ComposeProjectView: View {
             Button("Remove Containers", role: .destructive) { Task { await model.removeContainers(project) } }
         } message: {
             Text("They're stopped and deleted. Volumes and project files stay; Start creates them again.")
+        }
+        .confirmationDialog("Recreate “\(project.name)”?", isPresented: $confirmRecreate, titleVisibility: .visible) {
+            Button("Recreate", role: .destructive) { Task { await model.recreate(project) } }
+        } message: {
+            Text("Its containers are deleted and run again from the compose file. Volumes stay; files written inside the containers are lost.")
         }
         .confirmationDialog("Remove “\(project.name)” from Irekobox?", isPresented: $confirmRemoveProject,
                             titleVisibility: .visible) {
@@ -236,7 +242,7 @@ struct ComposeProjectView: View {
                     Divider()
                 }
                 if project.isManagedHere {
-                    Button("Recreate") { Task { await model.recreate(project) } }
+                    Button("Recreate") { confirmRecreate = true }
                         .help("Delete the containers and run the compose file again, e.g. after editing it")
                 }
                 Divider()

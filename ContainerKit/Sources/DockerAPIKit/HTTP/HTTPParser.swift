@@ -27,6 +27,18 @@ public struct HTTPParser: Sendable {
     public var maxHeadSize: Int
     public var maxBodySize: Int
     private var buffer = Data()
+    /// A chunked request whose body is still arriving: decoding resumes
+    /// where it stopped, so a large upload costs linear time.
+    private var pending: Pending?
+
+    private struct Pending: Sendable {
+        var request: HTTPRequest
+        var body = Data()
+        /// Where decoding resumes in `buffer`.
+        var index: Data.Index
+        /// Past the last chunk, reading trailer fields; their bytes so far.
+        var trailerBytes: Int?
+    }
 
     public init(maxHeadSize: Int = 64 << 10, maxBodySize: Int = 256 << 20) {
         self.maxHeadSize = maxHeadSize
@@ -46,6 +58,7 @@ public struct HTTPParser: Sendable {
 
     /// The next complete request, or nil when more bytes are needed.
     public mutating func next() throws -> HTTPRequest? {
+        if pending != nil { return try finishChunked() }
         // Tolerate stray CRLFs between requests (RFC 9112 §2.2).
         while buffer.starts(with: [0x0D, 0x0A]) { buffer.removeFirst(2) }
 
@@ -79,13 +92,14 @@ public struct HTTPParser: Sendable {
 
         if let coding = request.header("Transfer-Encoding") {
             guard coding.lowercased() == "chunked" else { throw ParseError.unsupportedTransferEncoding(coding) }
-            guard let (body, end) = try decodeChunked(from: bodyStart) else { return nil }
-            request.body = body
-            buffer.removeSubrange(buffer.startIndex..<end)
+            pending = Pending(request: request, index: bodyStart)
+            return try finishChunked()
         } else {
             let length: Int
             if let value = request.header("Content-Length") {
-                guard let parsed = Int(value), parsed >= 0 else { throw ParseError.badRequest("bad Content-Length") }
+                guard value.allSatisfy(\.isASCII), value.allSatisfy(\.isNumber), let parsed = Int(value) else {
+                    throw ParseError.badRequest("bad Content-Length")
+                }
                 length = parsed
             } else {
                 length = 0
@@ -100,41 +114,58 @@ public struct HTTPParser: Sendable {
         return request
     }
 
-    /// Decode a chunked body starting at `start`; nil when incomplete.
-    /// Returns the body and the index just past the final CRLF.
-    private func decodeChunked(from start: Data.Index) throws -> (Data, Data.Index)? {
-        var body = Data()
-        var index = start
+    /// Continue the pending chunked body; the request once it's complete,
+    /// nil while more bytes are needed.
+    private mutating func finishChunked() throws -> HTTPRequest? {
+        guard var state = pending else { return nil }
+        // Decoding stops at the buffer's end; the state is kept for the next bytes.
+        defer { if pending != nil { pending = state } }
         while true {
-            guard let lineEnd = buffer[index...].firstRange(of: Self.crlf) else {
-                if buffer.endIndex - index > 1024 { throw ParseError.badRequest("chunk size line too long") }
+            if let read = state.trailerBytes {
+                // Optional trailer fields, then an empty line; bounded like a head.
+                guard let lineEnd = buffer[state.index...].firstRange(of: Self.crlf) else {
+                    if read + (buffer.endIndex - state.index) > maxHeadSize { throw ParseError.headTooLarge }
+                    return nil
+                }
+                let isEmpty = lineEnd.lowerBound == state.index
+                state.trailerBytes = read + (lineEnd.upperBound - state.index)
+                state.index = lineEnd.upperBound
+                guard isEmpty else { continue }
+                var request = state.request
+                request.body = state.body
+                buffer.removeSubrange(buffer.startIndex..<state.index)
+                // Keep indices zero-based for the next round.
+                buffer = Data(buffer)
+                pending = nil
+                return request
+            }
+            guard let lineEnd = buffer[state.index...].firstRange(of: Self.crlf) else {
+                if buffer.endIndex - state.index > 1024 { throw ParseError.badRequest("chunk size line too long") }
                 return nil
             }
-            let sizeLine = String(decoding: buffer[index..<lineEnd.lowerBound], as: UTF8.self)
+            let sizeLine = String(decoding: buffer[state.index..<lineEnd.lowerBound], as: UTF8.self)
             let sizeText = sizeLine.split(separator: ";", maxSplits: 1).first.map {
                 $0.trimmingCharacters(in: .whitespaces)
             } ?? ""
-            guard let size = Int(sizeText, radix: 16), size >= 0 else {
+            guard !sizeText.isEmpty, sizeText.count <= 16, sizeText.allSatisfy(\.isHexDigit),
+                  let size = Int(sizeText, radix: 16) else {
                 throw ParseError.badRequest("bad chunk size")
             }
-            index = lineEnd.upperBound
+            // Compared without adding, so a huge size can't overflow.
+            if size > maxBodySize - state.body.count { throw ParseError.bodyTooLarge }
             if size == 0 {
-                // Optional trailer fields, then an empty line.
-                while true {
-                    guard let trailerEnd = buffer[index...].firstRange(of: Self.crlf) else { return nil }
-                    let isEmpty = trailerEnd.lowerBound == index
-                    index = trailerEnd.upperBound
-                    if isEmpty { return (body, index) }
-                }
+                state.index = lineEnd.upperBound
+                state.trailerBytes = 0
+                continue
             }
-            if body.count + size > maxBodySize { throw ParseError.bodyTooLarge }
-            guard buffer.endIndex - index >= size + 2 else { return nil }
-            body.append(buffer[index..<(index + size)])
-            index += size
-            guard buffer[index] == 0x0D, buffer[index + 1] == 0x0A else {
+            let dataStart = lineEnd.upperBound
+            guard buffer.endIndex - dataStart >= size + 2 else { return nil }
+            let dataEnd = dataStart + size
+            guard buffer[dataEnd] == 0x0D, buffer[dataEnd + 1] == 0x0A else {
                 throw ParseError.badRequest("chunk not terminated by CRLF")
             }
-            index += 2
+            state.body.append(buffer[dataStart..<dataEnd])
+            state.index = dataEnd + 2
         }
     }
 

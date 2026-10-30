@@ -226,7 +226,7 @@ struct PaletteView: View {
                                  perform: { [openSettings] in openSettings() }))
         items.append(PaletteItem(id: "action-stop-engine", kind: .action, title: String(localized: "Stop Engine"),
                                  systemImage: "stop.circle", keywords: "services system",
-                                 perform: { [app] in Task { await app.stopServices() } }))
+                                 perform: { [app] in app.engineRequest = .stop }))
         return items
     }
 }

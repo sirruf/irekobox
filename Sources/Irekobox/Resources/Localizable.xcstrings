@@ -9530,12 +9530,6 @@
     },
     "Background agent" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Фоновый агент"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -9546,6 +9540,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "バックグラウンドエージェント"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Фоновый агент"
           }
         },
         "zh-Hans" : {
@@ -15986,6 +15986,34 @@
         }
       }
     },
+    "Delete %@?" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Удалить %@?"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ löschen?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ を削除しますか？"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除 %@？"
+          }
+        }
+      }
+    },
     "Delete %lld Containers" : {
       "localizations" : {
         "de" : {
@@ -17544,12 +17572,6 @@
     },
     "Docker API" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Docker API"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -17557,6 +17579,12 @@
           }
         },
         "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Docker API"
+          }
+        },
+        "ru" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Docker API"
@@ -23739,6 +23767,34 @@
         }
       }
     },
+    "Its containers are deleted and run again from the compose file. Volumes stay; files written inside the containers are lost." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Его контейнеры удаляются и запускаются заново по compose-файлу. Тома остаются; файлы, записанные внутри контейнеров, пропадут."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seine Container werden gelöscht und aus der Compose-Datei neu gestartet. Volumes bleiben; in den Containern geschriebene Dateien gehen verloren."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コンテナは削除され、Compose ファイルから再実行されます。ボリュームは残りますが、コンテナ内で書き込まれたファイルは失われます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "其容器会被删除，并按 Compose 文件重新运行。卷会保留；写在容器内的文件将丢失。"
+          }
+        }
+      }
+    },
     "Its containers are deleted. Volumes and the compose file stay." : {
       "localizations" : {
         "de" : {
@@ -26553,6 +26609,34 @@
         }
       }
     },
+    "Machine VMs without a machine" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VM машин без самой машины"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maschinen-VMs ohne Maschine"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "マシンのない VM"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有对应机器的机器 VM"
+          }
+        }
+      }
+    },
     "Machine images" : {
       "localizations" : {
         "de" : {
@@ -28391,12 +28475,6 @@
     },
     "Needs the background agent" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Нужен фоновый агент"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -28407,6 +28485,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "バックグラウンドエージェントが必要です"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нужен фоновый агент"
           }
         },
         "zh-Hans" : {
@@ -31169,12 +31253,6 @@
     },
     "Not listening" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Не слушает"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -31185,6 +31263,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "待ち受けていません"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не слушает"
           }
         },
         "zh-Hans" : {
@@ -36667,12 +36751,6 @@
     },
     "Reading Compose and Kubernetes YAML" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Чтение YAML Compose и Kubernetes"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -36683,6 +36761,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Compose と Kubernetes の YAML の読み込み"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Чтение YAML Compose и Kubernetes"
           }
         },
         "zh-Hans" : {
@@ -36997,6 +37081,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "仅重新创建设置有更改的服务"
+          }
+        }
+      }
+    },
+    "Recreate “%@”?" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пересоздать «%@»?"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "„%@“ neu erstellen?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「%@」を再作成しますか？"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新创建“%@”？"
           }
         }
       }
@@ -38391,6 +38503,34 @@
         }
       }
     },
+    "Restart the engine?" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перезапустить движок?"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Engine neu starten?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "エンジンを再起動しますか？"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重启引擎？"
+          }
+        }
+      }
+    },
     "Restart unless you stopped it." : {
       "localizations" : {
         "de" : {
@@ -39507,6 +39647,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "正在运行的容器将停止，直到再次启动引擎。"
+          }
+        }
+      }
+    },
+    "Running containers stop while the engine restarts." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Запущенные контейнеры остановятся, пока движок перезапускается."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Laufende Container stoppen, während die Engine neu startet."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "エンジンの再起動中、実行中のコンテナは停止します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "引擎重启期间，正在运行的容器会停止。"
           }
         }
       }
@@ -44679,12 +44847,6 @@
     },
     "Terminals of containers, machines and pods" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Терминалы контейнеров, машин и подов"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -44695,6 +44857,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "コンテナ、マシン、Pod のターミナル"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Терминалы контейнеров, машин и подов"
           }
         },
         "zh-Hans" : {
@@ -44825,6 +44993,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "虚拟机占用 %1$@；容器使用 %2$@。"
+          }
+        }
+      }
+    },
+    "The VM stops and its disk is deleted. Files in your home folder stay." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VM остановится, её диск будет удалён. Файлы в вашей домашней папке останутся."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die VM stoppt und ihre Festplatte wird gelöscht. Dateien in Ihrem Benutzerordner bleiben."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VM は停止し、そのディスクは削除されます。ホームフォルダのファイルは残ります。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VM 会停止，其磁盘会被删除。主文件夹中的文件会保留。"
           }
         }
       }
@@ -45263,12 +45459,6 @@
     },
     "The engine Irekobox drives; installed separately, not shipped" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Движок, которым управляет Irekobox; ставится отдельно, в приложение не входит"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -45279,6 +45469,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Irekobox が操作するエンジン。別途インストールされ、同梱されていません"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Движок, которым управляет Irekobox; ставится отдельно, в приложение не входит"
           }
         },
         "zh-Hans" : {
@@ -45397,6 +45593,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "引擎未在运行。请从“引擎”菜单启动它（或运行 container system start）。"
+          }
+        }
+      }
+    },
+    "The engine runs these, but container no longer lists them as machines, so they can't be opened. They use memory until deleted." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Движок их запускает, но container больше не числит их машинами, поэтому открыть их нельзя. Пока они не удалены, они занимают память."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Engine führt sie aus, aber container listet sie nicht mehr als Maschinen, daher lassen sie sich nicht öffnen. Bis zum Löschen belegen sie Speicher."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "エンジンはこれらを実行していますが、container はもうマシンとして扱っていないため開けません。削除するまでメモリを使用します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "引擎仍在运行它们，但 container 已不再将其列为机器，因此无法打开。删除前它们会一直占用内存。"
           }
         }
       }
@@ -48396,21 +48620,15 @@
     },
     "Version %@ (%@)" : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Version %1$@ (%2$@)"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Версия %1$@ (%2$@)"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "Version %1$@ (%2$@)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
             "value" : "Version %1$@ (%2$@)"
           }
         },
@@ -48418,6 +48636,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "バージョン %1$@（%2$@）"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Версия %1$@ (%2$@)"
           }
         },
         "zh-Hans" : {
@@ -51627,12 +51851,6 @@
     },
     "checking for updates…" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "проверка обновлений…"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -51643,6 +51861,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "アップデートを確認中…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "проверка обновлений…"
           }
         },
         "zh-Hans" : {
@@ -51851,12 +52075,6 @@
     },
     "container isn’t installed" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "container не установлен"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -51867,6 +52085,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "container がインストールされていません"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "container не установлен"
           }
         },
         "zh-Hans" : {
@@ -51963,12 +52187,6 @@
     },
     "couldn’t check for updates" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "не удалось проверить обновления"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -51979,6 +52197,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "アップデートを確認できませんでした"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "не удалось проверить обновления"
           }
         },
         "zh-Hans" : {
