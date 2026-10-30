@@ -44,13 +44,18 @@ final class HealthMonitorTests: XCTestCase {
 
     func testTimeoutFailsTheProbe() async {
         final class Slow: DockerBackend, @unchecked Sendable {
-            func execute(_ id: String, command: [String]) async throws -> Data {
+            /// The probe runs over XPC and never finishes.
+            func waitProcess(_ container: String, process: String) async throws -> ContainerExit {
                 try await Task.sleep(for: .seconds(5))
-                return Data()
+                return ContainerExit(code: 0, exitedAt: nil)
             }
+            func execute(_ id: String, command: [String]) async throws -> Data { Data() }
             func systemStatus() async throws -> SystemStatus? { nil }
             func systemProperties() async throws -> String { "" }
-            func listContainers(all: Bool) async throws -> [Container] { [] }
+            func listContainers(all: Bool) async throws -> [Container] {
+                let url = try XCTUnwrap(Bundle.module.url(forResource: "Fixtures/container-list-1.6.1", withExtension: "json"))
+                return try JSONDecoder().decode([Container].self, from: Data(contentsOf: url))
+            }
             func listImages() async throws -> [ContainerImage] { [] }
             func startContainer(_ id: String) async throws {}
             func stopContainer(_ id: String, timeout: Int32?, signal: String?) async throws {}
@@ -67,7 +72,6 @@ final class HealthMonitorTests: XCTestCase {
             func createProcess(_ container: String, process: String, spec: ProcessSpec, stdio: ProcessStdio) async throws {}
             func startProcess(_ container: String, process: String) async throws {}
             func resizeProcess(_ container: String, process: String, width: Int, height: Int) async throws {}
-            func waitProcess(_ container: String, process: String) async throws -> ContainerExit { ContainerExit(code: 0, exitedAt: nil) }
             func copy(from source: String, to destination: String) async throws {}
             func exportContainer(_ id: String, to path: String) async throws {}
             func startServices() async throws {}
@@ -81,7 +85,7 @@ final class HealthMonitorTests: XCTestCase {
             func buildImage(_ options: BuildOptions) -> AsyncThrowingStream<String, Error> { AsyncThrowingStream { $0.finish() } }
         }
         let clock = ContinuousClock.now
-        let (code, output) = await HealthMonitor.execRunner(Slow())("web", ["sleep", "9"], 0.3)
+        let (code, output) = await HealthMonitor.execRunner(Slow())("ib-fx-redis", ["sleep", "9"], 0.3)
         XCTAssertEqual(code, -1)
         XCTAssertTrue(output.contains("timeout"))
         XCTAssertLessThan(ContinuousClock.now - clock, .seconds(2))

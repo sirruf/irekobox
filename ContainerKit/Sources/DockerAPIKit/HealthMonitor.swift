@@ -227,10 +227,14 @@ public actor HealthMonitor {
                 Task {
                     let result: (Int, String)
                     do {
-                        let data = try await backend.execute(container, command: command)
-                        result = (0, String(decoding: data.prefix(4096), as: UTF8.self))
-                    } catch EngineError.commandFailed(let code, let message) {
-                        result = (Int(code), String(message.prefix(4096)))
+                        // Over XPC: a CLI `container exec` per probe cost a
+                        // process every interval for every checked container.
+                        guard let target = try await backend.listContainers(all: false)
+                            .first(where: { $0.id == container }) else {
+                            throw EngineError.notFound(container)
+                        }
+                        let run = try await InContainer.run(command, in: target, backend: backend)
+                        result = (Int(run.code), String(decoding: run.output, as: UTF8.self))
                     } catch {
                         result = (-1, error.localizedDescription)
                     }

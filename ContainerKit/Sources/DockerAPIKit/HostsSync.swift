@@ -76,13 +76,13 @@ public actor HostsSync {
         let running = containers.filter { $0.state.isRunning }
         let files = Self.files(for: running.filter { !$0.isSystem }) + Self.machineFiles(for: running)
         var live: Set<String> = []
-        var changed: [(key: String, name: String, content: String)] = []
+        var changed: [(key: String, container: Container, content: String)] = []
         for (container, content) in files {
             let key = Self.key(container)
             live.insert(key)
             guard written[key] != content else { continue }
             if let last = failed[key], Date().timeIntervalSince(last) < 30 { continue }
-            changed.append((key, container.id, content))
+            changed.append((key, container, content))
         }
         // All at once: a start through the API waits for this, and in a
         // compose project each start changes every neighbour's file.
@@ -91,10 +91,10 @@ public actor HostsSync {
             for file in changed {
                 group.addTask {
                     do {
-                        try await Self.write(file.content, into: file.name, backend: backend)
-                        return (file.key, file.name, file.content, nil)
+                        try await Self.write(file.content, into: file.container, backend: backend)
+                        return (file.key, file.container.id, file.content, nil)
                     } catch {
-                        return (file.key, file.name, file.content, error)
+                        return (file.key, file.container.id, file.content, error)
                     }
                 }
             }
@@ -115,7 +115,18 @@ public actor HostsSync {
         failed = failed.filter { live.contains($0.key) }
     }
 
-    private static func write(_ content: String, into name: String, backend: DockerBackend) async throws {
+    /// Over XPC with `sh -c 'cat > /etc/hosts'` (no CLI process); an image
+    /// without a shell gets the file through `container cp` as before.
+    private static func write(_ content: String, into container: Container, backend: DockerBackend) async throws {
+        if let run = try? await InContainer.run(["/bin/sh", "-c", "cat > /etc/hosts"], in: container,
+                                                input: Data(content.utf8), backend: backend),
+           run.code == 0 {
+            return
+        }
+        try await copy(content, into: container.id, backend: backend)
+    }
+
+    private static func copy(_ content: String, into name: String, backend: DockerBackend) async throws {
         let folder = FileManager.default.temporaryDirectory.appending(path: "irekobox-hosts-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }

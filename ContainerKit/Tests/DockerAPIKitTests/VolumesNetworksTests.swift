@@ -340,6 +340,11 @@ final class HostsSyncTests: XCTestCase {
             try await Task.sleep(for: .milliseconds(150))
             lock.withLock { _copies.append(destination) }
         }
+        /// Files are written by running `cat > /etc/hosts` in the container.
+        func createProcess(_ container: String, process: String, spec: ProcessSpec, stdio: ProcessStdio) async throws {
+            try await Task.sleep(for: .milliseconds(150))
+            lock.withLock { _copies.append("\(container):/etc/hosts") }
+        }
         func listContainers(all: Bool) async throws -> [Container] { containers }
         func waitContainer(_ id: String) async throws -> ContainerExit { ContainerExit(code: 0, exitedAt: nil) }
         func systemStatus() async throws -> SystemStatus? { nil }
@@ -356,7 +361,6 @@ final class HostsSyncTests: XCTestCase {
         func containerLogs(_ id: String, follow: Bool) -> AsyncThrowingStream<String, Error> { AsyncThrowingStream { $0.finish() } }
         func containerStats(_ id: String) async throws -> ContainerStats { throw EngineError.notFound(id) }
         func bootstrapContainer(_ id: String, stdio: ProcessStdio) async throws {}
-        func createProcess(_ container: String, process: String, spec: ProcessSpec, stdio: ProcessStdio) async throws {}
         func startProcess(_ container: String, process: String) async throws {}
         func resizeProcess(_ container: String, process: String, width: Int, height: Int) async throws {}
         func waitProcess(_ container: String, process: String) async throws -> ContainerExit { ContainerExit(code: 0, exitedAt: nil) }
