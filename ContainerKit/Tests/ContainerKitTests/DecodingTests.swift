@@ -117,6 +117,15 @@ final class DecodingTests: XCTestCase {
         XCTAssertEqual(ContainerRecreate.parseEntrypoint(Data("[]".utf8), architecture: "arm64"), [])
     }
 
+    func testWidgetSnapshotDiffersIgnoresTheTimestamp() {
+        let earlier = WidgetSnapshot(updated: Date(timeIntervalSince1970: 1), engineRunning: true, running: 2, total: 3)
+        var later = WidgetSnapshot(updated: Date(timeIntervalSince1970: 60), engineRunning: true, running: 2, total: 3)
+        XCTAssertFalse(later.differs(from: earlier), "only the time moved")
+        XCTAssertTrue(later.differs(from: nil))
+        later.running = 1
+        XCTAssertTrue(later.differs(from: earlier))
+    }
+
     func testBuilderStatusParse() {
         XCTAssertFalse(BuilderStatus.parse(Data("[]".utf8)).isRunning)
         let running = BuilderStatus.parse(Data(#"[{"id":"buildkit","status":{"state":"running"}}]"#.utf8))

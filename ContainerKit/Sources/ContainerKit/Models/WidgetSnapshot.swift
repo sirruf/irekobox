@@ -44,6 +44,13 @@ public struct WidgetSnapshot: Codable, Sendable, Equatable {
         self.projects = projects
     }
 
+    /// Whether anything shown differs from `other` (when it was taken aside).
+    public func differs(from other: WidgetSnapshot?) -> Bool {
+        guard var other else { return true }
+        other.updated = updated
+        return other != self
+    }
+
     public static let appGroup = "YBKR9G3374.com.irekobox.shared"
 
     static var url: URL? {

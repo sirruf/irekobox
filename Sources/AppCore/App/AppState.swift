@@ -138,6 +138,8 @@ public final class AppState {
     @ObservationIgnored private var agent: AgentClient?
     @ObservationIgnored private let agentConnector = AgentConnector()
     @ObservationIgnored private let notifier = AlertNotifier()
+    /// What the widgets were last given, so they are only woken for news.
+    @ObservationIgnored private var widgetSnapshot: WidgetSnapshot?
     /// Container name → health status ("starting", "healthy", "unhealthy").
     public private(set) var health: [String: String] = [:]
     /// Bumped to ask for the main window (e.g. from a notification).
@@ -541,6 +543,7 @@ extension AppState {
     }
 
     /// What the widgets show, from the polled state and the stats recorder.
+    /// Written, and the widgets reloaded, only when something in it changed.
     func writeWidgetSnapshot() {
         let containers = model.containers.filter { !$0.isSystem }
         let running = containers.filter { $0.state.isRunning }
@@ -565,6 +568,8 @@ extension AppState {
         }
         let snapshot = WidgetSnapshot(engineRunning: servicesRunning, running: running.count, total: containers.count,
                                       cpuHistory: cpu, memoryBytes: memory, reclaimableBytes: reclaimable, projects: projects)
+        guard snapshot.differs(from: widgetSnapshot) else { return }
+        widgetSnapshot = snapshot
         snapshot.save()
         WidgetCenter.shared.reloadAllTimelines()
         ControlCenter.shared.reloadAllControls()
