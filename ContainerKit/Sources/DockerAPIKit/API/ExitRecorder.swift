@@ -16,6 +16,9 @@ public actor ExitRecorder {
     private let file: URL?
     private var records: [String: Record] = [:]
     private var watching: Set<String> = []
+    /// Missed stopped-run lookups live only until this recorder is replaced.
+    private var missed: Set<String> = []
+    private var lookups: [String: Task<ContainerExit?, Never>] = [:]
     private var loop: Task<Void, Never>?
     /// Told about every exit a watch sees (the supervisor restarts from here).
     private var onExit: (@Sendable (String, ContainerExit) async -> Void)?
@@ -55,9 +58,34 @@ public actor ExitRecorder {
         return ContainerExit(code: record.code, exitedAt: record.exitedAt)
     }
 
+    /// Ask once per stopped run, sharing the wait with concurrent descriptions.
+    func lookup(_ container: Container) async -> ContainerExit? {
+        guard let key = Self.key(container) else { return nil }
+        if let exit = exit(for: container) { return exit }
+        guard !missed.contains(key) else { return nil }
+        let task: Task<ContainerExit?, Never>
+        if let pending = lookups[key] {
+            task = pending
+        } else {
+            task = Task { [backend] in try? await backend.waitContainer(container.id) }
+            lookups[key] = task
+        }
+        let found = await task.value
+        lookups.removeValue(forKey: key)
+        // A watcher or client may have recorded the exit while we waited.
+        if let exit = exit(for: container) { return exit }
+        if let found {
+            record(found, for: container)
+        } else {
+            missed.insert(key)
+        }
+        return found
+    }
+
     /// Store an exit learned elsewhere (e.g. a client's own wait).
     public func record(_ exit: ContainerExit, for container: Container) {
         guard let key = Self.key(container) else { return }
+        missed.remove(key)
         records[key] = Record(code: exit.code, exitedAt: exit.exitedAt)
         save()
     }
@@ -75,6 +103,7 @@ public actor ExitRecorder {
                 await self.finished(key: key, exit: exit)
             }
         }
+        missed.formIntersection(Set(containers.compactMap(Self.key)))
         let alive = Set(containers.map(\.id))
         let stale = records.keys.filter { key in !alive.contains(String(key.split(separator: "|").first ?? "")) }
         if !stale.isEmpty {
@@ -86,6 +115,7 @@ public actor ExitRecorder {
     private func finished(key: String, exit: ContainerExit?) async {
         watching.remove(key)
         guard let exit else { return }
+        missed.remove(key)
         records[key] = Record(code: exit.code, exitedAt: exit.exitedAt)
         save()
         let name = String(key.split(separator: "|").first ?? "")

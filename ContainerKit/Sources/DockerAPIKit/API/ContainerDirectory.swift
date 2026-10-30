@@ -54,12 +54,14 @@ public struct DockerContainer: Sendable {
 public struct ContainerDirectory: Sendable {
     let backend: DockerBackend
     let exits: ExitRecorder?
+    private let exitLookups: ExitRecorder
     let health: HealthMonitor?
     let renames: Renames?
 
     public init(backend: DockerBackend, exits: ExitRecorder? = nil, health: HealthMonitor? = nil, renames: Renames? = nil) {
         self.backend = backend
         self.exits = exits
+        self.exitLookups = exits ?? ExitRecorder(backend: backend)
         self.health = health
         self.renames = renames
     }
@@ -110,11 +112,7 @@ public struct ContainerDirectory: Sendable {
         guard container.status.startedDate != nil else {
             return DockerContainer(container: container, id: id, state: .created, exit: nil)
         }
-        if let exit = await exits?.exit(for: container) {
-            return DockerContainer(container: container, id: id, state: .exited, exit: exit)
-        }
-        let exit = try? await backend.waitContainer(container.id)
-        if let exit { await exits?.record(exit, for: container) }
+        let exit = await exitLookups.lookup(container)
         return DockerContainer(container: container, id: id, state: .exited, exit: exit)
     }
 }

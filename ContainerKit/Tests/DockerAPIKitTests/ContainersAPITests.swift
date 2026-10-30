@@ -9,6 +9,8 @@ private final class FakeEngine: DockerBackend, @unchecked Sendable {
     /// Last exit per stopped container; absent → never ran ("invalidState").
     var exits: [String: ContainerExit] = [:]
     private(set) var calls: [String] = []
+    private var waits = 0
+    var waitCount: Int { lock.withLock { waits } }
     private let lock = NSLock()
 
     init(containers: [Container]) { self.containers = containers }
@@ -26,6 +28,8 @@ private final class FakeEngine: DockerBackend, @unchecked Sendable {
     func killContainer(_ id: String, signal: String?) async throws { record("kill \(id) \(signal ?? "-")") }
     func deleteContainer(_ id: String, force: Bool) async throws { record("delete \(id) force=\(force)") }
     func waitContainer(_ id: String) async throws -> ContainerExit {
+        lock.withLock { waits += 1 }
+        await Task.yield()
         if let exit = exits[id] { return exit }
         throw EngineError.serviceError(code: "invalidState", message: "no runtime client exists: container is stopped")
     }
@@ -305,6 +309,85 @@ final class ContainersAPITests: XCTestCase {
     }
 
     // MARK: - Exit recorder
+
+    func testMissedExitIsQueriedOncePerRun() async throws {
+        let engine = FakeEngine(containers: try fixture(ran: ["ib-fx-stopped"]))
+        let stopped = try XCTUnwrap(engine.containers.first { $0.id == "ib-fx-stopped" })
+        let recorder = ExitRecorder(backend: engine)
+        let directory = ContainerDirectory(backend: engine, exits: recorder)
+        await withTaskGroup(of: Void.self) { group in
+            for _ in 0..<20 {
+                group.addTask {
+                    let item = await directory.describe(stopped)
+                    XCTAssertEqual(item.state, .exited)
+                    XCTAssertNil(item.exit)
+                }
+            }
+        }
+        _ = try await directory.all()
+        _ = try await directory.resolve(stopped.id)
+        XCTAssertEqual(engine.waitCount, 1)
+
+        let nextRun = try JSONDecoder().decode(Container.self, from: JSONEncoder().encode(stopped)
+            .replacing(Data("2026-10-26T00:00:00Z".utf8), with: Data("2026-10-26T09:00:00Z".utf8)))
+        _ = await directory.describe(nextRun)
+        XCTAssertEqual(engine.waitCount, 2, "a later run gets its own lookup")
+
+        await recorder.record(ContainerExit(code: 7, exitedAt: nil), for: stopped)
+        let recorded = await directory.describe(stopped)
+        XCTAssertEqual(recorded.exit?.code, 7, "a real record supersedes a missed lookup")
+        XCTAssertEqual(engine.waitCount, 2)
+    }
+
+    func testConcurrentDescriptionsShareSuccessfulExitLookup() async throws {
+        let engine = FakeEngine(containers: try fixture(ran: ["ib-fx-stopped"]))
+        let stopped = try XCTUnwrap(engine.containers.first { $0.id == "ib-fx-stopped" })
+        engine.exits[stopped.id] = ContainerExit(code: 12, exitedAt: nil)
+        let directory = ContainerDirectory(backend: engine, exits: ExitRecorder(backend: engine))
+        await withTaskGroup(of: Void.self) { group in
+            for _ in 0..<20 {
+                group.addTask {
+                    let item = await directory.describe(stopped)
+                    XCTAssertEqual(item.exit?.code, 12)
+                }
+            }
+        }
+        XCTAssertEqual(engine.waitCount, 1)
+    }
+
+    func testRecorderForgetsMissesForRemovedContainers() async throws {
+        let engine = FakeEngine(containers: try fixture(ran: ["ib-fx-stopped"]))
+        let stopped = try XCTUnwrap(engine.containers.first { $0.id == "ib-fx-stopped" })
+        let recorder = ExitRecorder(backend: engine)
+        let directory = ContainerDirectory(backend: engine, exits: recorder)
+        _ = await directory.describe(stopped)
+        engine.containers = []
+        await recorder.scan()
+        _ = await directory.describe(stopped)
+        XCTAssertEqual(engine.waitCount, 2)
+    }
+
+    func testMissedExitIsNotPersistedAndDefaultDirectoryCachesIt() async throws {
+        let file = FileManager.default.temporaryDirectory.appending(path: "ib-exits-\(UUID().uuidString).json")
+        defer { try? FileManager.default.removeItem(at: file) }
+        let engine = FakeEngine(containers: try fixture(ran: ["ib-fx-stopped"]))
+        let stopped = try XCTUnwrap(engine.containers.first { $0.id == "ib-fx-stopped" })
+        let redis = try XCTUnwrap(engine.containers.first { $0.id == "ib-fx-redis" })
+        let recorder = ExitRecorder(backend: engine, file: file)
+        let directory = ContainerDirectory(backend: engine, exits: recorder)
+        _ = await directory.describe(stopped)
+        await recorder.record(ContainerExit(code: 3, exitedAt: nil), for: redis)
+        let saved = try JSONDecoder().decode([String: ExitRecorder.Record].self, from: Data(contentsOf: file))
+        XCTAssertEqual(saved.count, 1)
+        let reloaded = ContainerDirectory(backend: engine, exits: ExitRecorder(backend: engine, file: file))
+        _ = await reloaded.describe(stopped)
+        XCTAssertEqual(engine.waitCount, 2, "an agent restart retries missed exits")
+
+        let fallback = ContainerDirectory(backend: engine)
+        _ = await fallback.describe(stopped)
+        _ = await fallback.describe(stopped)
+        XCTAssertEqual(engine.waitCount, 3)
+    }
 
     func testRecorderCatchesExitsOfRunningContainersAndPersistsThem() async throws {
         let file = FileManager.default.temporaryDirectory.appending(path: "ib-exits-\(UUID().uuidString).json")
