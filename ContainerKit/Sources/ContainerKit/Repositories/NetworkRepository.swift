@@ -26,7 +26,7 @@ public struct NetworkRepository: Sendable {
         if let subnet = spec.subnet { arguments += ["--subnet", subnet] }
         if let subnet = spec.subnetV6 { arguments += ["--subnet-v6", subnet] }
         if spec.hostOnly { arguments.append("--internal") }
-        for (key, value) in spec.labels.sorted(by: { $0.key < $1.key }) { arguments += ["--label", "\(key)=\(value)"] }
+        for (key, value) in spec.labels.sorted(by: { $0.key < $1.key }) { arguments += ["--label", "\(key)=\(LabelValue.encode(value))"] }
         for (key, value) in spec.options.sorted(by: { $0.key < $1.key }) { arguments += ["--option", "\(key)=\(value)"] }
         try await cli.run(arguments + [spec.name])
     }

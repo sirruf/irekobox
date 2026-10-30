@@ -19,7 +19,7 @@ public struct VolumeRepository: Sendable {
     /// `container volume create [--label k=v]… [--opt k=v]… [-s size] <name>`.
     public func create(_ name: String, labels: [String: String], size: String?, options: [String: String]) async throws {
         var arguments = ["volume", "create"]
-        for (key, value) in labels.sorted(by: { $0.key < $1.key }) { arguments += ["--label", "\(key)=\(value)"] }
+        for (key, value) in labels.sorted(by: { $0.key < $1.key }) { arguments += ["--label", "\(key)=\(LabelValue.encode(value))"] }
         for (key, value) in options.sorted(by: { $0.key < $1.key }) { arguments += ["--opt", "\(key)=\(value)"] }
         if let size { arguments += ["-s", size] }
         try await cli.run(arguments + [name])
