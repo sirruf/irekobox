@@ -11620,6 +11620,34 @@
         }
       }
     },
+    "Click to see what's new and install it." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klicken Sie, um die Neuerungen zu sehen und zu installieren."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "クリックすると新機能を確認してインストールできます。"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нажмите, чтобы узнать, что нового, и установить."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点按以查看新功能并安装。"
+          }
+        }
+      }
+    },
     "Close" : {
       "localizations" : {
         "de" : {
@@ -23247,6 +23275,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "变量名称无效"
+          }
+        }
+      }
+    },
+    "Irekobox %@ is available" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Irekobox %@ ist verfügbar"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Irekobox %@ が利用可能です"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Доступна версия Irekobox %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Irekobox %@ 现已推出"
           }
         }
       }
@@ -47773,6 +47829,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ 的更新"
+          }
+        }
+      }
+    },
+    "Update to Irekobox %@…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auf Irekobox %@ aktualisieren …"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Irekobox %@ にアップデート…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Обновить до Irekobox %@…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更新到 Irekobox %@…"
           }
         }
       }

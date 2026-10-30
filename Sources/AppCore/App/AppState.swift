@@ -173,7 +173,15 @@ public final class AppState {
         observeWindowVisibility()
         Task { await connectAgent() }
         Task { [updates] in await updates.checkIfDue() }
-        Task { [appUpdater] in await appUpdater.checkIfDue() }
+        appUpdater.onAvailable = { [notifier] appcast in
+            // Once per version, not on every daily check.
+            let key = "appUpdateNotifiedBuild"
+            guard UserDefaults.standard.integer(forKey: key) < appcast.build else { return }
+            UserDefaults.standard.set(appcast.build, forKey: key)
+            notifier.notifyAppUpdate(appcast.version)
+        }
+        notifier.onAppUpdate = { [weak self] in self?.aboutWindowRequest += 1 }
+        appUpdater.start()
         imageUpdates.onNewUpdate = { [notifier] reference in notifier.notifyImageUpdate(reference) }
         notifier.onOpenImage = { [weak self] _ in
             self?.section = .images
@@ -235,6 +243,10 @@ public final class AppState {
     }
 
     /// An appcast is configured, so the app can update itself.
+    /// Changes when something (an update notification) asks for the About
+    /// window, where updates are installed.
+    public var aboutWindowRequest = 0
+
     public var appUpdatesAvailable: Bool { AppUpdater.appcastURL != nil }
 
     /// Bring up the Settings window (where updates are shown).

@@ -103,7 +103,8 @@ struct IrekoboxApp: App {
             MenuBarView()
                 .environment(appState)
         } label: {
-            MenuBarLabel(running: appState.servicesRunning, windowRequest: appState.mainWindowRequest)
+            MenuBarLabel(running: appState.servicesRunning, windowRequest: appState.mainWindowRequest,
+                         aboutRequest: appState.aboutWindowRequest)
         }
         .menuBarExtraStyle(.window)
 
@@ -122,6 +123,8 @@ private struct MenuBarLabel: View {
     let running: Bool
     /// Changes when something (a notification) asks for the main window.
     let windowRequest: Int
+    /// Changes when an update notification asks for the About window.
+    let aboutRequest: Int
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
@@ -143,6 +146,10 @@ private struct MenuBarLabel: View {
                 }
                 if windows.isEmpty { openWindow(id: "main") }
                 windows.forEach { $0.makeKeyAndOrderFront(nil) }
+            }
+            .onChange(of: aboutRequest) {
+                openWindow(id: "about")
+                NSApplication.shared.activate()
             }
     }
 }

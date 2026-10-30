@@ -47,9 +47,33 @@ public final class AppUpdater {
     var isEnabled: Bool {
         didSet { UserDefaults.standard.set(isEnabled, forKey: "checkAppUpdates") }
     }
+    /// A check found a newer version (once per check).
+    @ObservationIgnored var onAvailable: ((Appcast) -> Void)?
+    @ObservationIgnored private var loop: Task<Void, Never>?
+
+    /// The version a check found, until it is installed: a check runs once a
+    /// day, so without this a relaunch would forget an update until the next.
+    private static let foundKey = "appAvailableUpdate"
 
     init() {
         isEnabled = UserDefaults.standard.object(forKey: "checkAppUpdates") as? Bool ?? true
+        if let data = UserDefaults.standard.data(forKey: Self.foundKey),
+           let found = try? JSONDecoder().decode(Appcast.self, from: data),
+           Self.isNewer(found, than: Self.installedBuild) {
+            phase = .available(found)
+        }
+    }
+
+    /// Check now if due, then again whenever a day has passed while the app
+    /// keeps running.
+    public func start() {
+        guard loop == nil else { return }
+        loop = Task { [weak self] in
+            while !Task.isCancelled {
+                await self?.checkIfDue()
+                try? await Task.sleep(for: .seconds(3600))
+            }
+        }
     }
 
     static var installedBuild: Int {
@@ -76,10 +100,26 @@ public final class AppUpdater {
             let (data, _) = try await URLSession.shared.data(for: request)
             let appcast = try JSONDecoder().decode(Appcast.self, from: data)
             UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "appLastUpdateCheck")
-            phase = Self.isNewer(appcast, than: Self.installedBuild) ? .available(appcast) : .idle
+            if Self.isNewer(appcast, than: Self.installedBuild) {
+                phase = .available(appcast)
+                UserDefaults.standard.set(try? JSONEncoder().encode(appcast), forKey: Self.foundKey)
+                onAvailable?(appcast)
+            } else {
+                phase = .idle
+                UserDefaults.standard.removeObject(forKey: Self.foundKey)
+            }
         } catch {
-            phase = force ? .failed(String(localized: "Couldn't check for updates: \(error.localizedDescription)")) : .idle
+            if force {
+                phase = .failed(String(localized: "Couldn't check for updates: \(error.localizedDescription)"))
+            } else if phase == .checking {
+                phase = Self.found.map { .available($0) } ?? .idle
+            }
         }
+    }
+
+    private static var found: Appcast? {
+        UserDefaults.standard.data(forKey: foundKey).flatMap { try? JSONDecoder().decode(Appcast.self, from: $0) }
+            .flatMap { isNewer($0, than: installedBuild) ? $0 : nil }
     }
 
     /// Download, verify, replace and relaunch.

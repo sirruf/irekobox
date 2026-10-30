@@ -38,6 +38,8 @@ final class AlertNotifier: NSObject, UNUserNotificationCenterDelegate {
     var onOpen: ((String) -> Void)?
     /// Asked when an image update notification is clicked.
     var onOpenImage: ((String) -> Void)?
+    /// An Irekobox update notification was clicked.
+    var onAppUpdate: (() -> Void)?
     /// A crash notification's Show Logs.
     var onShowLogs: ((String) -> Void)?
     /// An out-of-memory crash's Give It More Memory.
@@ -157,6 +159,23 @@ final class AlertNotifier: NSObject, UNUserNotificationCenterDelegate {
         }
     }
 
+    /// A newer Irekobox is published.
+    func notifyAppUpdate(_ version: String) {
+        guard Bundle.main.bundleIdentifier != nil else { return }
+        UNUserNotificationCenter.current().delegate = self
+        Task {
+            let center = UNUserNotificationCenter.current()
+            if await center.notificationSettings().authorizationStatus == .notDetermined {
+                _ = try? await center.requestAuthorization(options: [.alert, .sound])
+            }
+            let content = UNMutableNotificationContent()
+            content.title = String(localized: "Irekobox \(version) is available")
+            content.body = String(localized: "Click to see what's new and install it.")
+            content.userInfo = ["appUpdate": version]
+            try? await center.add(UNNotificationRequest(identifier: "app-update-\(version)", content: content, trigger: nil))
+        }
+    }
+
     // MARK: - Assistant approvals
 
     static let approvalCategory = "assistant-approval"
@@ -238,6 +257,10 @@ final class AlertNotifier: NSObject, UNUserNotificationCenterDelegate {
                     askInWindow(id: id, assistant: assistant, action: what)
                 }
             }
+            return
+        }
+        if info["appUpdate"] != nil {
+            await MainActor.run { onAppUpdate?() }
             return
         }
         if let image = info["image"] as? String {

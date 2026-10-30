@@ -36,6 +36,16 @@ public struct MenuBarView: View {
                 ProgressView().controlSize(.small).frame(maxWidth: .infinity).padding(DS.Spacing.l)
             }
             Divider()
+            if case .available(let appcast) = app.appUpdater.phase {
+                Button { openWindow(id: "about"); NSApplication.shared.activate() } label: {
+                    Label("Update to Irekobox \(appcast.version)…", systemImage: "arrow.down.circle")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(DS.accent)
+                .padding(.horizontal, DS.Spacing.m)
+                .padding(.top, DS.Spacing.m)
+            }
             footer
         }
         .frame(width: 340)
