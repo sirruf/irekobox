@@ -34,6 +34,8 @@ final class AlertNotifier: NSObject, UNUserNotificationCenterDelegate {
         return value?.uint64Value
     }()
     private var task: Task<Void, Never>?
+    /// The wait between polls; `nudge()` cuts it short.
+    private var sleeper: Task<Void, Never>?
     /// Asked when a notification is clicked: show this container.
     var onOpen: ((String) -> Void)?
     /// Asked when an image update notification is clicked.
@@ -65,15 +67,21 @@ final class AlertNotifier: NSObject, UNUserNotificationCenterDelegate {
     var onHealth: (([String: String]) -> Void)?
     private let log = Logger(subsystem: "com.irekobox.app", category: "alerts")
 
-    /// Poll `agent` until `stop()` or the agent is replaced.
+    /// Poll `agent` until `stop()` or the agent is replaced: often while a
+    /// container is starting or unhealthy or alerts just came (a change is
+    /// likely), seldom otherwise. A container that stops reaches the engine
+    /// model as a pushed event, and ``note(_:)`` polls at once then.
     func start(agent: AgentClient) {
-        task?.cancel()
+        stop()
         // Tests and previews run without a bundle identifier.
         if Bundle.main.bundleIdentifier != nil { UNUserNotificationCenter.current().delegate = self }
         task = Task { [weak self] in
             while !Task.isCancelled {
-                await self?.poll(agent)
-                try? await Task.sleep(for: .seconds(4))
+                guard let self else { return }
+                let alerts = await self.poll(agent)
+                let sleeper = Task { _ = try? await Task.sleep(for: Self.interval(health: self.health, hadAlerts: alerts > 0)) }
+                self.sleeper = sleeper
+                await sleeper.value
             }
         }
     }
@@ -81,9 +89,35 @@ final class AlertNotifier: NSObject, UNUserNotificationCenterDelegate {
     func stop() {
         task?.cancel()
         task = nil
+        sleeper?.cancel()
+        sleeper = nil
     }
 
-    private func poll(_ agent: AgentClient) async {
+    /// Poll now: an alert may be waiting.
+    func nudge() {
+        sleeper?.cancel()
+    }
+
+    /// Engine events the model received: a container that changed state or
+    /// went away may have an alert behind it.
+    func note(_ events: [EngineEvent]) {
+        if events.contains(where: Self.mayAlert) { nudge() }
+    }
+
+    static func mayAlert(_ event: EngineEvent) -> Bool {
+        switch event {
+        case .containerStateChanged, .containerRemoved: return true
+        default: return false
+        }
+    }
+
+    /// The wait after a poll: short while something is in flux.
+    static func interval(health: [String: String], hadAlerts: Bool) -> Duration {
+        hadAlerts || health.values.contains { $0 != "healthy" } ? .seconds(4) : .seconds(15)
+    }
+
+    /// Health and new alerts; returns how many alerts came.
+    private func poll(_ agent: AgentClient) async -> Int {
         if let statuses = try? await agent.healthStatuses(), statuses != health {
             health = statuses
             onHealth?(statuses)
@@ -91,15 +125,16 @@ final class AlertNotifier: NSObject, UNUserNotificationCenterDelegate {
         guard let lastSeen else {
             // First run: start from now, never replay history.
             if let (_, latest) = try? await agent.alerts(after: .max) { remember(latest) }
-            return
+            return 0
         }
-        guard let (alerts, latest) = try? await agent.alerts(after: lastSeen) else { return }
+        guard let (alerts, latest) = try? await agent.alerts(after: lastSeen) else { return 0 }
         // A newer agent started its numbering below what we saw: catch up.
-        if alerts.isEmpty, latest < lastSeen { remember(latest); return }
+        if alerts.isEmpty, latest < lastSeen { remember(latest); return 0 }
         for alert in alerts where Topic.of(alert.kind).enabled {
             await post(alert)
         }
         if let newest = alerts.map(\.sequence).max() { remember(newest) }
+        return alerts.count
     }
 
     private func remember(_ sequence: UInt64) {

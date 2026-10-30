@@ -170,6 +170,7 @@ public final class AppState {
         let store = EngineStore(engine: engine, intervals: Self.intervals())
         self.localStore = store
         self.model = EngineModel(source: store)
+        model.onEvents = { [notifier] events in notifier.note(events) }
         observeWindowVisibility()
         if backgroundAgentEnabled {
             // The agent polls on its own and usually answers within a moment;

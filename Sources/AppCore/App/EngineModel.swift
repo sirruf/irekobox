@@ -25,6 +25,9 @@ public final class EngineModel {
     /// Screen interest id → resources and the current source's token.
     @ObservationIgnored private var interests: [UUID: (resources: Set<EngineResource>, token: UUID?)] = [:]
     @ObservationIgnored private var visible = true
+    /// Told the events of each update that has any (the alert notifier
+    /// polls at once when a container changed).
+    @ObservationIgnored var onEvents: (([EngineEvent]) -> Void)?
 
     init(source: any EngineStateSource) {
         self.source = source
@@ -55,6 +58,7 @@ public final class EngineModel {
                 self.snapshot = update.snapshot
                 self.lastEvents = update.events
                 self.record(update.events.compactMap { ActivityEntry.make($0, old: old, new: update.snapshot) })
+                if !update.events.isEmpty { self.onEvents?(update.events) }
             }
         }
     }
