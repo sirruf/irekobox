@@ -8,6 +8,9 @@ struct LiveMap: View {
     let nodes: [Node]
     let open: (Node) -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Moving lines only while this window is the one in use: a window left
+    /// open behind other apps would otherwise redraw them all day.
+    @Environment(\.controlActiveState) private var activeState
 
     struct Node: Identifiable, Equatable {
         enum Kind: Equatable { case compose, cluster, machine, container }
@@ -48,10 +51,12 @@ struct LiveMap: View {
         .frame(maxWidth: .infinity, alignment: .top)
         .backgroundPreferenceValue(MapAnchors.self) { anchors in
             GeometryReader { proxy in
-                // Lines to running things move; with nothing running the
-                // map holds still instead of redrawing every frame.
-                TimelineView(.animation(minimumInterval: 1 / 30,
-                                        paused: reduceMotion || !nodes.contains(where: \.isLive))) { timeline in
+                // Lines to running things move; with nothing running, or the
+                // window in the background, the map holds still instead of
+                // redrawing (15 frames a second is plenty for the flow).
+                TimelineView(.animation(minimumInterval: 1 / 15,
+                                        paused: reduceMotion || activeState != .key
+                                            || !nodes.contains(where: \.isLive))) { timeline in
                     let phase = reduceMotion ? 0 : -timeline.date.timeIntervalSinceReferenceDate * 22
                     Canvas { context, _ in
                         guard let mac = anchors["mac"].map({ proxy[$0] }) else { return }

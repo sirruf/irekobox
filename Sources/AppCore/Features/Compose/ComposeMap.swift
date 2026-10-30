@@ -50,6 +50,9 @@ struct ComposeMap: View {
 
     @Environment(\.openURL) private var openURL
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Moving lines only while this window is the one in use: a window left
+    /// open behind other apps would otherwise redraw them all day.
+    @Environment(\.controlActiveState) private var activeState
     @State private var hovered: String?
     /// Where cards were put (top left, in the cards area); empty = automatic.
     @State private var placed: [String: CGPoint] = [:]
@@ -109,7 +112,8 @@ struct ComposeMap: View {
         .backgroundPreferenceValue(MapAnchors.self) { anchors in
             GeometryReader { proxy in
                 // Ways in carry moving dashes while their service runs.
-                TimelineView(.animation(paused: reduceMotion || !reachable.contains { $0.tone == .positive })) { timeline in
+                TimelineView(.animation(minimumInterval: 1 / 15,
+                                        paused: reduceMotion || activeState != .key || !reachable.contains { $0.tone == .positive })) { timeline in
                     let phase = reduceMotion ? 0 : -timeline.date.timeIntervalSinceReferenceDate * 22
                     edges(anchors, proxy, phase: phase.truncatingRemainder(dividingBy: 24))
                 }
