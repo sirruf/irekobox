@@ -270,31 +270,48 @@ public final class AgentClient: NSObject, EngineStateSource, AgentClientProtocol
                 return
             }
             body(proxy) { once.resume(.success($0)) }
-            DispatchQueue.global().asyncAfter(deadline: .now() + .milliseconds(Int(timeout.components.seconds * 1000
-                + timeout.components.attoseconds / 1_000_000_000_000_000))) {
-                once.resume(.failure(ClientError.timedOut))
-            }
+            once.expire(after: timeout, with: ClientError.timedOut)
         }
     }
 }
 
-/// Resumes a continuation once; later results are dropped.
-private final class Once<T: Sendable>: @unchecked Sendable {
+/// Resumes a continuation once; later results are dropped. A deadline set
+/// with ``expire(after:with:)`` is cancelled by the first result, so no
+/// timer stays scheduled after a reply.
+final class Once<T: Sendable>: @unchecked Sendable {
     private let lock = NSLock()
     private var continuation: CheckedContinuation<T, Error>?
+    private var deadline: DispatchWorkItem?
     private var done = false
 
     func install(_ continuation: CheckedContinuation<T, Error>) {
         lock.withLock { self.continuation = continuation }
     }
 
-    func resume(_ result: Result<T, Error>) {
-        let continuation = lock.withLock { () -> CheckedContinuation<T, Error>? in
-            guard !done else { return nil }
-            done = true
-            defer { self.continuation = nil }
-            return self.continuation
+    /// Fail with `error` after `timeout` unless a result came first.
+    func expire(after timeout: Duration, with error: Error) {
+        let item = DispatchWorkItem { [weak self] in self?.resume(.failure(error)) }
+        let scheduled = lock.withLock { () -> Bool in
+            guard !done else { return false }
+            deadline = item
+            return true
         }
+        guard scheduled else { return }
+        let nanoseconds = timeout.components.seconds * 1_000_000_000 + timeout.components.attoseconds / 1_000_000_000
+        DispatchQueue.global().asyncAfter(deadline: .now() + .nanoseconds(Int(nanoseconds)), execute: item)
+    }
+
+    /// A deadline is still scheduled.
+    var isExpiring: Bool { lock.withLock { deadline != nil } }
+
+    func resume(_ result: Result<T, Error>) {
+        let (continuation, deadline) = lock.withLock { () -> (CheckedContinuation<T, Error>?, DispatchWorkItem?) in
+            guard !done else { return (nil, nil) }
+            done = true
+            defer { self.continuation = nil; self.deadline = nil }
+            return (self.continuation, self.deadline)
+        }
+        deadline?.cancel()
         continuation?.resume(with: result)
     }
 }

@@ -91,9 +91,7 @@ final class APIServerConnection: @unchecked Sendable {
                     pending.resume(with: self.parse(reply, from: connection))
                 }
                 if let timeout {
-                    queue.asyncAfter(deadline: .now() + .nanoseconds(Int(timeout.nanoseconds))) {
-                        pending.resume(with: .failure(EngineError.timedOut))
-                    }
+                    pending.expire(after: timeout, on: queue, with: EngineError.timedOut)
                 }
             }
         } onCancel: {
@@ -161,11 +159,14 @@ extension EngineError {
 }
 
 /// Resumes a continuation exactly once — with the reply, a timeout, or a
-/// cancellation, whichever comes first. Late outcomes are dropped.
-private final class PendingReply: @unchecked Sendable {
+/// cancellation, whichever comes first. Late outcomes are dropped, and the
+/// timeout set with ``expire(after:on:with:)`` is cancelled by the first
+/// outcome, so no timer stays scheduled after a reply.
+final class PendingReply: @unchecked Sendable {
     private let lock = NSLock()
     private var continuation: CheckedContinuation<APIServerConnection.Reply, Error>?
     private var early: Result<APIServerConnection.Reply, Error>?
+    private var deadline: DispatchWorkItem?
     private var done = false
 
     func install(_ continuation: CheckedContinuation<APIServerConnection.Reply, Error>) {
@@ -179,18 +180,35 @@ private final class PendingReply: @unchecked Sendable {
         lock.unlock()
     }
 
+    /// Fail with `error` after `timeout` unless an outcome came first.
+    func expire(after timeout: Duration, on queue: DispatchQueue, with error: Error) {
+        let item = DispatchWorkItem { [weak self] in self?.resume(with: .failure(error)) }
+        lock.lock()
+        guard !done else { lock.unlock(); return }
+        deadline = item
+        lock.unlock()
+        queue.asyncAfter(deadline: .now() + .nanoseconds(Int(timeout.nanoseconds)), execute: item)
+    }
+
+    /// A deadline is still scheduled.
+    var isExpiring: Bool { lock.withLock { deadline != nil } }
+
     func resume(with result: Result<APIServerConnection.Reply, Error>) {
         lock.lock()
         guard !done else { lock.unlock(); return }
         done = true
+        let deadline = self.deadline
+        self.deadline = nil
         guard let continuation else {
             // Cancelled before the continuation was installed.
             early = result
             lock.unlock()
+            deadline?.cancel()
             return
         }
         self.continuation = nil
         lock.unlock()
+        deadline?.cancel()
         continuation.resume(with: result)
     }
 }
