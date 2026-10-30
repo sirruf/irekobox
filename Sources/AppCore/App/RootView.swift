@@ -296,7 +296,9 @@ private struct EngineFooter: View {
     }
 }
 
-/// A ring that grows out of the engine dot and fades: it's alive.
+/// A ring that grows out of the engine dot and fades: it's alive. Three
+/// rings, then rest: a repeating animation redraws the window every frame
+/// for as long as it's open (about 5% of a core here).
 private struct Ping: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var on = false
@@ -307,7 +309,7 @@ private struct Ping: View {
             .opacity(on ? 0 : 0.55)
             .onAppear {
                 guard !reduceMotion else { return }
-                withAnimation(.easeOut(duration: 2).repeatForever(autoreverses: false)) { on = true }
+                withAnimation(.easeOut(duration: 2).repeatCount(3, autoreverses: false)) { on = true }
             }
             .accessibilityHidden(true)
     }
