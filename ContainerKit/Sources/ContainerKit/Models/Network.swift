@@ -11,9 +11,10 @@ public struct Network: Codable, Identifiable, Hashable, Sendable {
         public let mode: String?
         public let plugin: String?
         public let creationDate: String?
-        /// Labels as stored; `labels` reads values encoded by ``LabelValue``.
+        /// Labels as stored; `labels` reads values and keys encoded by
+        /// ``LabelValue`` and ``LabelKey``.
         private let rawLabels: [String: String]?
-        public var labels: [String: String]? { rawLabels?.mapValues(LabelValue.decode) }
+        public var labels: [String: String]? { rawLabels.map { LabelKey.decode($0.mapValues(LabelValue.decode)) } }
         public let options: [String: String]?
 
         enum CodingKeys: String, CodingKey {
