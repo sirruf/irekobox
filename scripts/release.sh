@@ -12,6 +12,9 @@
 #   DOWNLOAD_BASE_URL  where the zip will be published (for appcast.json); default: next to APPCAST_URL
 #   NOTARY_PROFILE     notarytool keychain profile (default: irekobox-notary); create it once with
 #                      xcrun notarytool store-credentials irekobox-notary --apple-id … --team-id YBKR9G3374
+#   NOTARY_KEY, NOTARY_KEY_ID, NOTARY_ISSUER
+#                      an App Store Connect API key used directly instead of the profile
+#                      (no keychain needed, e.g. when it is locked)
 #
 # Output in build/release/: Irekobox.app, Irekobox-<version>.zip, .dmg, appcast.json.
 set -euo pipefail
@@ -21,6 +24,11 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$ROOT/build/release"
 TEAM="YBKR9G3374"
 PROFILE="${NOTARY_PROFILE:-irekobox-notary}"
+if [ -n "${NOTARY_KEY:-}" ]; then
+    NOTARY_AUTH=(--key "$NOTARY_KEY" --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER")
+else
+    NOTARY_AUTH=(--keychain-profile "$PROFILE")
+fi
 NOTARIZE=1
 [ "${1:-}" = "--skip-notarize" ] && NOTARIZE=0
 
@@ -67,10 +75,10 @@ echo "    signature ok"
 
 ZIP="$OUT/Irekobox-$VERSION.zip"
 if [ "$NOTARIZE" = 1 ]; then
-    if xcrun notarytool history --keychain-profile "$PROFILE" >/dev/null 2>&1; then
+    if xcrun notarytool history "${NOTARY_AUTH[@]}" >/dev/null 2>&1; then
         echo "==> Notarizing (profile $PROFILE)"
         ditto -c -k --keepParent "$APP" "$OUT/notarize.zip"
-        xcrun notarytool submit "$OUT/notarize.zip" --keychain-profile "$PROFILE" --wait
+        xcrun notarytool submit "$OUT/notarize.zip" "${NOTARY_AUTH[@]}" --wait
         xcrun stapler staple "$APP"
         spctl --assess --type execute --verbose "$APP"
     else
@@ -85,9 +93,9 @@ DMG="$OUT/Irekobox-$VERSION.dmg"
 [ -e "$DMG" ] && mv "$DMG" "$OUT/.old-$(date +%s)-$(basename "$DMG")"
 hdiutil create -quiet -volname "Irekobox" -srcfolder "$APP" -ov -format UDZO "$DMG"
 sign "$DMG"
-if [ "$NOTARIZE" = 1 ] && xcrun notarytool history --keychain-profile "$PROFILE" >/dev/null 2>&1; then
+if [ "$NOTARIZE" = 1 ] && xcrun notarytool history "${NOTARY_AUTH[@]}" >/dev/null 2>&1; then
     echo "==> Notarizing the disk image"
-    xcrun notarytool submit "$DMG" --keychain-profile "$PROFILE" --wait
+    xcrun notarytool submit "$DMG" "${NOTARY_AUTH[@]}" --wait
     xcrun stapler staple "$DMG"
 fi
 
