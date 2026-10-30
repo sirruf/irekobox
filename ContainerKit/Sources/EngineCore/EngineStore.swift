@@ -13,7 +13,9 @@ import ContainerKit
 /// - **Last good data:** a failed fetch keeps the previous value and records the
 ///   error (``Loadable/isStale``).
 /// - **Events:** each applied change is diffed into ``EngineEvent``s and
-///   broadcast with the new snapshot to every ``updates()`` subscriber.
+///   broadcast with the new snapshot to every ``updates()`` subscriber. A
+///   fetch that returns what the store already has is not broadcast (only
+///   `updatedAt` moves), so an idle engine costs subscribers nothing.
 public actor EngineStore {
     public struct Intervals: Sendable {
         public var system: Duration
@@ -92,7 +94,7 @@ public actor EngineStore {
         let id = UUID()
         interest[id] = resources
         for resource in resources where lastFetch[resource] == nil {
-            Task { await refresh(resource) }
+            fetchTask(resource)
         }
         wakePoller()
         return id
@@ -131,7 +133,7 @@ public actor EngineStore {
         lastFetch = [:]
         publish([])
         for resource in polledResources {
-            Task { await refresh(resource) }
+            fetchTask(resource)
         }
     }
 
@@ -151,20 +153,26 @@ public actor EngineStore {
         requested[resource, default: 0] += 1
         let target = requested[resource]!
         while completed[resource, default: 0] < target {
-            if let running = inFlight[resource] {
-                await running.value
-                continue
-            }
-            // This fetch serves every request made before it starts.
-            let covers = requested[resource]!
-            let task = Task {
-                await self.fetch(resource)
-                self.completed[resource] = max(self.completed[resource, default: 0], covers)
-                self.inFlight[resource] = nil
-            }
-            inFlight[resource] = task
-            await task.value
+            await fetchTask(resource).value
         }
+    }
+
+    /// The fetch of `resource` in flight, started now if there is none.
+    @discardableResult
+    private func fetchTask(_ resource: EngineResource) -> Task<Void, Never> {
+        if let running = inFlight[resource] { return running }
+        // This fetch serves every request made before it starts.
+        let covers = requested[resource, default: 0]
+        let task = Task {
+            await self.fetch(resource)
+            self.completed[resource] = max(self.completed[resource, default: 0], covers)
+            self.inFlight[resource] = nil
+            // The poller left this resource out of its deadline while the
+            // fetch ran; let it schedule the next one.
+            self.wakePoller()
+        }
+        inFlight[resource] = task
+        return task
     }
 
     // MARK: - Polling
@@ -186,9 +194,13 @@ public actor EngineStore {
             let now = clock.now
             let resources = polledResources
             for resource in resources where isDue(resource, at: now) {
-                Task { await refresh(resource) }
+                fetchTask(resource)
             }
+            // A fetch in flight has no deadline: it wakes the poller when it
+            // completes. Counting it would put the deadline in the past and
+            // spin the loop for as long as the fetch runs.
             let next = resources
+                .filter { inFlight[$0] == nil }
                 .map { (lastFetch[$0] ?? now) + intervals.interval(for: $0, background: background) }
                 .min() ?? now + .seconds(1)
             let sleeper = Task { _ = try? await Task.sleep(until: max(next, now + .milliseconds(10)), clock: clock) }
@@ -228,8 +240,7 @@ public actor EngineStore {
             let result = await Self.capture { try await engine.listContainers(all: true) }
             guard generation == engineGeneration else { return }
             let events = result.value.map { EventDiff.containers(old: snapshot.containers.value, new: $0) } ?? []
-            apply(result, to: \.containers)
-            publish(events)
+            if apply(result, to: \.containers) { publish(events) }
         case .images:
             let result = await Self.capture { try await engine.listImages() }
             guard generation == engineGeneration else { return }
@@ -237,8 +248,7 @@ public actor EngineStore {
                 EventDiff.names(old: snapshot.images.value?.map(\.reference), new: $0.map(\.reference),
                                 added: { .imageAdded(reference: $0) }, removed: { .imageRemoved(reference: $0) })
             } ?? []
-            apply(result, to: \.images)
-            publish(events)
+            if apply(result, to: \.images) { publish(events) }
         case .volumes:
             let result = await Self.capture { try await engine.listVolumes() }
             guard generation == engineGeneration else { return }
@@ -246,8 +256,7 @@ public actor EngineStore {
                 EventDiff.names(old: snapshot.volumes.value?.map(\.name), new: $0.map(\.name),
                                 added: { .volumeAdded(name: $0) }, removed: { .volumeRemoved(name: $0) })
             } ?? []
-            apply(result, to: \.volumes)
-            publish(events)
+            if apply(result, to: \.volumes) { publish(events) }
         case .networks:
             let result = await Self.capture { try await engine.listNetworks() }
             guard generation == engineGeneration else { return }
@@ -255,13 +264,11 @@ public actor EngineStore {
                 EventDiff.names(old: snapshot.networks.value?.map(\.name), new: $0.map(\.name),
                                 added: { .networkAdded(name: $0) }, removed: { .networkRemoved(name: $0) })
             } ?? []
-            apply(result, to: \.networks)
-            publish(events)
+            if apply(result, to: \.networks) { publish(events) }
         case .diskUsage:
             let result = await Self.capture { try await engine.diskUsage() }
             guard generation == engineGeneration else { return }
-            apply(result, to: \.diskUsage)
-            publish([])
+            if apply(result, to: \.diskUsage) { publish([]) }
         }
     }
 
@@ -275,8 +282,7 @@ public actor EngineStore {
         }
         guard generation == engineGeneration else { return }
 
-        let wasRunning = snapshot.service.isRunning
-        let wasKnown = snapshot.service != .unknown
+        let was = snapshot.service
         switch status {
         case .success(let status?) where status.isRunning:
             snapshot.service = .running(status)
@@ -285,21 +291,22 @@ public actor EngineStore {
         case .failure(let error):
             snapshot.service = .failed(error)
         }
+        let builderChanged = snapshot.builder != builder
         snapshot.builder = builder
 
         var events: [EngineEvent] = []
         let isRunning = snapshot.service.isRunning
-        if wasKnown && !wasRunning && isRunning { events.append(.servicesStarted) }
-        if wasRunning && snapshot.service == .stopped { events.append(.servicesStopped) }
+        if was != .unknown && !was.isRunning && isRunning { events.append(.servicesStarted) }
+        if was.isRunning && snapshot.service == .stopped { events.append(.servicesStopped) }
         if snapshot.service == .stopped {
             clearServiceData()
         }
-        publish(events)
+        if snapshot.service != was || builderChanged { publish(events) }
 
         // Fresh services: load what consumers are waiting for.
-        if !wasRunning && isRunning {
+        if !was.isRunning && isRunning {
             for resource in polledResources where resource != .system {
-                Task { await refresh(resource) }
+                fetchTask(resource)
             }
         }
     }
@@ -316,13 +323,19 @@ public actor EngineStore {
         }
     }
 
-    private func apply<Value>(_ result: Result<Value, EngineError>,
-                              to keyPath: WritableKeyPath<EngineSnapshot, Loadable<Value>>) {
+    /// Record the outcome of a fetch; `true` when subscribers should hear
+    /// about it. The same value again only moves `updatedAt`; the same error
+    /// again changes nothing.
+    private func apply<Value: Equatable>(_ result: Result<Value, EngineError>,
+                                         to keyPath: WritableKeyPath<EngineSnapshot, Loadable<Value>>) -> Bool {
+        let current = snapshot[keyPath: keyPath]
         switch result {
         case .success(let value):
             snapshot[keyPath: keyPath] = Loadable(value: value, error: nil, updatedAt: Date())
+            return current.value != value || current.error != nil
         case .failure(let error):
             snapshot[keyPath: keyPath].error = error
+            return current.error != error
         }
     }
 

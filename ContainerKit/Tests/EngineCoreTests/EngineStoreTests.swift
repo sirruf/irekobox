@@ -161,6 +161,60 @@ final class EngineStoreTests: XCTestCase {
         ])
     }
 
+    func testUnchangedResultsAreNotPublished() async throws {
+        let engine = MockEngine()
+        engine.containers = .success([container("a", "running")])
+        let store = await runningStore(engine)
+
+        var updates = await store.updates().makeAsyncIterator()
+        _ = await updates.next()   // current snapshot
+
+        await store.refresh(.containers)
+        let first = await updates.next()
+        XCTAssertEqual(first?.snapshot.containers.value?.map(\.id), ["a"])
+        let loadedAt = try XCTUnwrap(first?.snapshot.containers.updatedAt)
+
+        // The same answers again: subscribers hear nothing, yet the store
+        // knows the data is fresh.
+        try await Task.sleep(for: .milliseconds(20))
+        await store.refresh(.containers)
+        await store.refresh(.system)
+        let updatedAt = await store.snapshot.containers.updatedAt
+        XCTAssertGreaterThan(try XCTUnwrap(updatedAt), loadedAt)
+
+        engine.containers = .success([container("b", "running")])
+        await store.refresh(.containers)
+        let next = await updates.next()
+        XCTAssertEqual(next?.snapshot.containers.value?.map(\.id), ["b"],
+                       "the unchanged fetches published nothing in between")
+        XCTAssertEqual(next?.events, [.containerCreated(id: "b"), .containerRemoved(id: "a")])
+    }
+
+    func testErrorTransitionsArePublishedOnce() async throws {
+        let engine = MockEngine()
+        engine.containers = .success([container("a", "running")])
+        let store = await runningStore(engine)
+        await store.refresh(.containers)
+
+        var updates = await store.updates().makeAsyncIterator()
+        _ = await updates.next()
+
+        engine.containers = .failure(.timedOut)
+        await store.refresh(.containers)
+        let failed = await updates.next()
+        XCTAssertEqual(failed?.snapshot.containers.error, .timedOut)
+        XCTAssertEqual(failed?.snapshot.containers.value?.map(\.id), ["a"])
+
+        // The same failure again is not news; the recovery (to the same
+        // value) is.
+        await store.refresh(.containers)
+        engine.containers = .success([container("a", "running")])
+        await store.refresh(.containers)
+        let recovered = await updates.next()
+        XCTAssertNil(recovered?.snapshot.containers.error)
+        XCTAssertEqual(recovered?.snapshot.containers.value?.map(\.id), ["a"])
+    }
+
     func testConcurrentRefreshesCoalesce() async throws {
         let engine = MockEngine()
         let store = await runningStore(engine)
