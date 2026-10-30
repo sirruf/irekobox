@@ -103,6 +103,8 @@ final class SystemAPITests: XCTestCase {
         XCTAssertEqual(body["NCPU"] as? Int, 10)
         XCTAssertEqual(body["MemTotal"] as? Int, 32 << 30)
         XCTAssertEqual(body["Containers"] as? Int, 0)
+        let systemTime = try XCTUnwrap(body["SystemTime"] as? String)
+        XCTAssertNotNil(systemTime.wholeMatch(of: /\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z/), systemTime)
         XCTAssertEqual((body["Swarm"] as? [String: Any])?["LocalNodeState"] as? String, "inactive")
         XCTAssertTrue((body["OperatingSystem"] as? String)?.contains("1.6.1") == true)
     }

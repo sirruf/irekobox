@@ -184,11 +184,15 @@ public final class DockerAPIServer: @unchecked Sendable {
         return String(format: "%02d.%03d", seconds, Int((now - now.rounded(.down)) * 1000))
     }
 
-    private static func httpDate() -> String {
+    nonisolated(unsafe) private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = TimeZone(identifier: "GMT")
         formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss 'GMT'"
-        return formatter.string(from: Date())
+        return formatter
+    }()
+
+    static func httpDate(_ date: Date = Date()) -> String {
+        dateFormatter.string(from: date)
     }
 }

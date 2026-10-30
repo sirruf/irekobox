@@ -22,10 +22,14 @@ public struct HTTPResponse: Sendable {
         self.body = body
     }
 
-    /// JSON with Docker's encoding conventions (keys as declared by the model).
-    public static func json<T: Encodable>(_ value: T, status: Int = 200) -> HTTPResponse {
+    private static let encoder: JSONEncoder = {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.withoutEscapingSlashes]
+        return encoder
+    }()
+
+    /// JSON with Docker's encoding conventions (keys as declared by the model).
+    public static func json<T: Encodable>(_ value: T, status: Int = 200) -> HTTPResponse {
         let data = (try? encoder.encode(value)) ?? Data("{}".utf8)
         return HTTPResponse(status: status, headers: [("Content-Type", "application/json")],
                             body: .data(data + Data("\n".utf8)))

@@ -406,8 +406,6 @@ public enum SystemAPI {
         }
         let images = (try? await backend.listImages().filter { !$0.isSystem }) ?? []
         let running = containers.filter { $0.state.isRunning }.count
-        let iso = ISO8601DateFormatter()
-        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 
         return .json(Info(
             ID: "irekobox-\(host.hostName)",
@@ -416,7 +414,7 @@ public enum SystemAPI {
             ContainersStopped: containers.count - running,
             Images: images.count,
             DockerRootDir: status.appRoot ?? "",
-            SystemTime: iso.string(from: Date()),
+            SystemTime: DockerTime.string(Date()),
             KernelVersion: await kernelVersion(backend),
             OperatingSystem: "Apple container \(status.apiServerVersion ?? "") (via Irekobox)",
             OSVersion: host.macOSVersion,
