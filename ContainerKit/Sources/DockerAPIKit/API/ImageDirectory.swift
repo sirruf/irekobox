@@ -32,7 +32,17 @@ struct ImageDirectory: Sendable {
     let backend: DockerBackend
 
     func all() async throws -> [DockerImage] {
-        let images = try await backend.listImages().filter { !$0.isSystem }
+        Self.group(try await backend.listImages())
+    }
+
+    /// Images with references and digests only: enough to find one, and much
+    /// cheaper to list. Sizes and dates come from inspecting it.
+    func lookup() async throws -> [DockerImage] {
+        Self.group(try await backend.listImageReferences())
+    }
+
+    private static func group(_ list: [ContainerImage]) -> [DockerImage] {
+        let images = list.filter { !$0.isSystem }
         let grouped = Dictionary(grouping: images, by: \.digest)
         return grouped.map { digest, references in
             let image = DockerImage(id: digest.hasPrefix("sha256:") ? digest : "sha256:\(digest)",
@@ -47,7 +57,7 @@ struct ImageDirectory: Sendable {
     /// `alpine@sha256:…`) or by ID / unique ID prefix (with or without `sha256:`).
     /// Returns the image and the matched reference (nil when found by ID).
     func resolve(_ name: String) async throws -> (DockerImage, ContainerImage?) {
-        let images = try await all()
+        let images = try await lookup()
         if let reference = ImageReference(name) {
             for image in images {
                 if let match = image.references.first(where: { ImageReference($0.reference)?.canonical == reference.canonical }) {

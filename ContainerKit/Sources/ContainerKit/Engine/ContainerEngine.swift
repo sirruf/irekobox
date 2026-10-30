@@ -66,6 +66,9 @@ public protocol ContainerEngine: Sendable {
     // MARK: Images
 
     func listImages() async throws -> [ContainerImage]
+    /// Images by reference and index digest only — no sizes, dates or
+    /// variants: what looking an image up needs, at a fraction of the cost.
+    func listImageReferences() async throws -> [ContainerImage]
     func pullImage(_ reference: String) async throws
     /// Pull with `--progress plain` output lines (see ``PullProgress``).
     /// `platform` limits the pull (e.g. `linux/arm64`); `nil` pulls every variant.
@@ -115,4 +118,6 @@ public extension ContainerEngine {
     func stopContainer(_ id: String) async throws {
         try await stopContainer(id, timeout: nil, signal: nil)
     }
+
+    func listImageReferences() async throws -> [ContainerImage] { try await listImages() }
 }

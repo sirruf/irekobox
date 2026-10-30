@@ -7,6 +7,8 @@ import Foundation
 /// registries, system start/stop, and creates/prunes.
 public struct XPCEngine: ContainerEngine {
     private let connection: APIServerConnection
+    /// The images service, for listing only (see ``listImageReferences()``).
+    private let images = APIServerConnection(serviceName: "com.apple.container.core.container-core-images")
     /// Handles every operation XPC doesn't cover.
     public let fallback: CLIEngine
     /// Runs before every start; throwing stops it (the app checks ports here).
@@ -227,6 +229,29 @@ public struct XPCEngine: ContainerEngine {
     // MARK: Images
 
     public func listImages() async throws -> [ContainerImage] { try await fallback.listImages() }
+
+    /// The images service's own list: references and index descriptors, as
+    /// `container image ls` gets them before it reads every image's manifests
+    /// and configs for sizes and dates (a few ms instead of a few hundred with
+    /// some fifty images). The service is private to `container`, so any
+    /// surprise falls back to the CLI.
+    public func listImageReferences() async throws -> [ContainerImage] {
+        struct Description: Decodable {
+            let reference: String
+            let descriptor: ContainerImage.Configuration.Descriptor
+        }
+        do {
+            let reply = try await images.send(.init(route: "imageList"))
+            return try decode([Description].self, try payload(reply, "imageDescriptions")).map { description in
+                ContainerImage(id: String(description.descriptor.digest.split(separator: ":").last ?? ""),
+                               configuration: .init(name: description.reference, creationDate: nil,
+                                                    descriptor: description.descriptor),
+                               variants: nil)
+            }
+        } catch {
+            return try await fallback.listImages()
+        }
+    }
     public func pullImage(_ reference: String) async throws { try await fallback.pullImage(reference) }
     public func deleteImage(_ reference: String, force: Bool) async throws {
         try await fallback.deleteImage(reference, force: force)

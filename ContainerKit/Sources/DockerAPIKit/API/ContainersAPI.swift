@@ -190,13 +190,10 @@ public enum ContainersAPI {
         return .json(CreateResponse(Id: created.id, Warnings: warnings), status: 201)
     }
 
-    /// Whether the image is here. Inspecting one image is cheap; listing them
-    /// all (which reads every image's size) took a quarter of a second with
-    /// some fifty images, so the list is only the fallback: for digests, and
-    /// to be sure before a 404.
+    /// Whether the image is here, from the list of references (no sizes:
+    /// listing those took a quarter of a second with some fifty images).
     private static func isLocal(_ reference: ImageReference, _ backend: DockerBackend) async throws -> Bool {
-        if reference.digest == nil, (try? await backend.inspectImage(reference.canonical)) != nil { return true }
-        return try await backend.listImages().contains { image in
+        try await backend.listImageReferences().contains { image in
             ImageReference(image.reference)?.canonical == reference.canonical
                 || (reference.digest != nil && image.digest == reference.digest)
         }

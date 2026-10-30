@@ -137,7 +137,7 @@ public actor EventHub {
             }
         }
         guard full else { return snapshot }
-        if let images = try? await ImageDirectory(backend: backend).all() {
+        if let images = try? await ImageDirectory(backend: backend).lookup() {
             snapshot.images = [:]
             for image in images {
                 for reference in image.references { snapshot.images[reference.reference] = image.id }

@@ -8,6 +8,8 @@ public protocol DockerBackend: Sendable {
     func systemProperties() async throws -> String
     func listContainers(all: Bool) async throws -> [Container]
     func listImages() async throws -> [ContainerImage]
+    /// References and digests only (see `ContainerEngine.listImageReferences`).
+    func listImageReferences() async throws -> [ContainerImage]
     func startContainer(_ id: String) async throws
     func stopContainer(_ id: String, timeout: Int32?, signal: String?) async throws
     func killContainer(_ id: String, signal: String?) async throws
@@ -49,6 +51,7 @@ public protocol DockerBackend: Sendable {
 
 /// Test stubs needn't implement what their tests don't reach.
 extension DockerBackend {
+    public func listImageReferences() async throws -> [ContainerImage] { try await listImages() }
     public func listVolumes() async throws -> [Volume] { throw DockerAPIError(501, "volumes not available") }
     public func createVolume(_ name: String, labels: [String: String], size: String?) async throws {
         throw DockerAPIError(501, "volumes not available")
@@ -71,6 +74,7 @@ public struct EngineBackend: DockerBackend {
     public func listImages() async throws -> [ContainerImage] {
         try await images.list { [engine] in try await engine.listImages() }
     }
+    public func listImageReferences() async throws -> [ContainerImage] { try await engine.listImageReferences() }
     public func startContainer(_ id: String) async throws { try await engine.startContainer(id) }
     public func stopContainer(_ id: String, timeout: Int32?, signal: String?) async throws {
         try await engine.stopContainer(id, timeout: timeout, signal: signal)
