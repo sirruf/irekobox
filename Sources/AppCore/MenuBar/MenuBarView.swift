@@ -11,6 +11,7 @@ public struct MenuBarView: View {
     @State private var isStarting = false
     @State private var stats = LiveStats()
     @State private var clusters: [Cluster] = []
+    @State private var isVisible = false
 
     public init() {}
 
@@ -51,16 +52,24 @@ public struct MenuBarView: View {
         .frame(width: 340)
         .tint(DS.accent)
         .errorToast(Binding(get: { app.actionError }, set: { app.actionError = $0 }))
-        .task { await app.model.observe([.containers]) }
-        .task {
+        // MenuBarExtra(.window) retains its content when ordered out. Its
+        // tasks must follow the AppKit window, not just SwiftUI appearance.
+        .background(MenuBarVisibility { isVisible = $0 })
+        .task(id: isVisible) {
+            guard isVisible else { return }
+            await app.model.observe([.containers])
+        }
+        .task(id: isVisible) {
+            guard isVisible else { return }
             let stats = self.stats
             await stats.run(engine: app.engine, interval: .seconds(3)) { [app] in
                 app.model.containers.filter { $0.state.isRunning && !$0.isSystem }.map(\.id)
             }
         }
-        .task {
+        .task(id: isVisible) {
+            guard isVisible else { return }
             let repository = ClusterRepository(cli: app.cli, stream: CLIStream(binaryPath: Settings.shared.binaryPath))
-            if let list = try? await repository.list() { clusters = list }
+            if let list = try? await repository.list(), !Task.isCancelled { clusters = list }
         }
     }
 
@@ -324,6 +333,57 @@ public struct MenuBarView: View {
         }
         for window in mainWindows {
             window.makeKeyAndOrderFront(nil)
+        }
+    }
+}
+
+/// Bridges the retained popover window's visibility without a polling timer.
+private struct MenuBarVisibility: NSViewRepresentable {
+    let changed: (Bool) -> Void
+
+    func makeNSView(context: Context) -> VisibilityView {
+        let view = VisibilityView()
+        view.changed = changed
+        return view
+    }
+
+    func updateNSView(_ view: VisibilityView, context: Context) {
+        view.changed = changed
+    }
+
+    static func dismantleNSView(_ view: VisibilityView, coordinator: ()) {
+        NotificationCenter.default.removeObserver(view)
+        let changed = view.changed
+        view.changed = { _ in }
+        Task { @MainActor in changed(false) }
+    }
+
+    final class VisibilityView: NSView {
+        var changed: (Bool) -> Void = { _ in }
+        private var lastVisible = false
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            NotificationCenter.default.removeObserver(self)
+            if let window {
+                for name in [NSWindow.didChangeOcclusionStateNotification, NSWindow.didBecomeKeyNotification,
+                             NSWindow.didResignKeyNotification, NSWindow.willCloseNotification] {
+                    NotificationCenter.default.addObserver(self, selector: #selector(visibilityChanged),
+                                                           name: name, object: window)
+                }
+            }
+            visibilityChanged()
+        }
+
+        @objc private func visibilityChanged() {
+            // Defer publication outside the NSViewRepresentable update pass.
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                let visible = window.map { $0.isVisible && $0.occlusionState.contains(.visible) } ?? false
+                guard visible != lastVisible else { return }
+                lastVisible = visible
+                changed(visible)
+            }
         }
     }
 }
