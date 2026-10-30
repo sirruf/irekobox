@@ -25,10 +25,12 @@ actor MockRunner: StackCommandRunner {
 enum MockError: Error, LocalizedError {
     case boom
     case alreadyExists
+    case notFound
     var errorDescription: String? {
         switch self {
         case .boom: return "command failed"
         case .alreadyExists: return "network already exists"
+        case .notFound: return "container not found"
         }
     }
 }
