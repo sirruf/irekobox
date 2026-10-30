@@ -1,4 +1,5 @@
 import XCTest
+import Darwin
 import ContainerKit
 @testable import DockerAPIKit
 
@@ -48,7 +49,8 @@ private final class FakeEngine: DockerBackend, @unchecked Sendable {
         ContainerStats(id: id, cpuUsageUsec: 0, memoryUsageBytes: 0, memoryLimitBytes: 0, networkRxBytes: 0,
                        networkTxBytes: 0, blockReadBytes: 0, blockWriteBytes: 0, numProcesses: 0)
     }
-    func bootstrapContainer(_ id: String, stdio: ProcessStdio) async throws {}
+    // A start boots over XPC; record it like the CLI start it replaced.
+    func bootstrapContainer(_ id: String, stdio: ProcessStdio) async throws { record("start \(id)") }
     func createProcess(_ container: String, process: String, spec: ProcessSpec, stdio: ProcessStdio) async throws {}
     func startProcess(_ container: String, process: String) async throws {}
     func resizeProcess(_ container: String, process: String, width: Int, height: Int) async throws {}
@@ -368,6 +370,50 @@ final class ContainersAPITests: XCTestCase {
         XCTAssertEqual(helpers.count, 1, "only the volume that didn't exist: \(engine.calls)")
         XCTAssertTrue(helpers[0].contains(" -v pgdata:/.irekobox-copyup "), helpers[0])
         XCTAssertTrue(helpers[0].contains("/var/lib/postgresql/data"), helpers[0])
+    }
+
+    func testATakenPortIsReportedInDockersWords() throws {
+        let listener = socket(AF_INET, SOCK_STREAM, 0)
+        defer { close(listener) }
+        var address = sockaddr_in()
+        address.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
+        address.sin_family = sa_family_t(AF_INET)
+        address.sin_addr.s_addr = INADDR_ANY
+        let size = socklen_t(MemoryLayout<sockaddr_in>.size)
+        let bound = withUnsafePointer(to: &address) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { Darwin.bind(listener, $0, size) }
+        }
+        try XCTSkipIf(bound != 0, "binding is not allowed here")
+        XCTAssertEqual(listen(listener, 1), 0)
+        var length = size
+        _ = withUnsafeMutablePointer(to: &address) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { getsockname(listener, $0, &length) }
+        }
+        let port = Int(UInt16(bigEndian: address.sin_port))
+        var list = try JSONSerialization.jsonObject(with: JSONEncoder().encode(try fixture())) as! [[String: Any]]
+        var configuration = list[0]["configuration"] as! [String: Any]
+        configuration["publishedPorts"] = [["containerPort": 5432, "hostPort": port, "proto": "tcp"]]
+        list[0]["configuration"] = configuration
+        let container = try JSONDecoder().decode([Container].self, from: JSONSerialization.data(withJSONObject: list))[0]
+
+        struct RuntimeError: Error, CustomStringConvertible {
+            var description: String { #"failed to bootstrap container (cause: "unknown: "bind(descriptor:ptr:bytes:): Address already in use) (errno: 48)")"# }
+        }
+        let error = try XCTUnwrap(ContainersAPI.portConflict(RuntimeError(), container))
+        XCTAssertTrue(error.message.contains("Bind for 0.0.0.0:\(port) failed: port is already allocated"), error.message)
+        struct Other: Error {}
+        XCTAssertNil(ContainersAPI.portConflict(Other(), container), "other start errors pass through")
+    }
+
+    func testAMissingBindSourceIsNamed() throws {
+        var list = try JSONSerialization.jsonObject(with: JSONEncoder().encode(try fixture())) as! [[String: Any]]
+        var configuration = list[0]["configuration"] as! [String: Any]
+        configuration["mounts"] = [["destination": "/data", "source": "/nonexistent-irekobox-test", "options": [String]()]]
+        list[0]["configuration"] = configuration
+        let container = try JSONDecoder().decode([Container].self, from: JSONSerialization.data(withJSONObject: list))[0]
+        XCTAssertThrowsError(try ContainersAPI.checkMountSources(container)) { error in
+            XCTAssertTrue((error as? DockerAPIError)?.message.contains("/nonexistent-irekobox-test") == true)
+        }
     }
 
     func testRemoveWithVolumesDeletesAnonymousOnes() async throws {

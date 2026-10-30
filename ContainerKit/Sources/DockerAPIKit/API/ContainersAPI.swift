@@ -47,12 +47,18 @@ public enum ContainersAPI {
                                                                        beforeStart: beforeStart)
                         }
                         if !attached {
-                            if expected {
+                            // Over XPC, as `container start` does it — boot,
+                            // then the init process — without a CLI process
+                            // for every start.
+                            try checkMountSources(item.container)
+                            do {
                                 try await backend.bootstrapContainer(item.name, stdio: ProcessStdio())
                                 await beforeStart()
                                 try await backend.startProcess(item.name, process: item.name)
-                            } else {
-                                try await backend.startContainer(item.name)
+                            } catch {
+                                // Like `container start`: don't leave it half started.
+                                try? await backend.stopContainer(item.name, timeout: 0, signal: nil)
+                                throw portConflict(error, item.container) ?? error
                             }
                         }
                         // Files sent before the first start go in right after it
@@ -142,6 +148,60 @@ public enum ContainersAPI {
         }
         router.add("POST", "/containers/{id}/wait") { request in
             await respond { try await wait(request, directory, backend, waits) }
+        }
+    }
+
+    /// The runtime reports a taken host port as a nested `bind(…): Address
+    /// already in use`; say which port, in Docker's words (tools match them).
+    static func portConflict(_ error: Error, _ container: Container) -> DockerAPIError? {
+        guard String(describing: error).contains("Address already in use") else { return nil }
+        let taken = (container.configuration.publishedPorts ?? []).first { port in
+            (port.proto ?? "tcp").lowercased() == "tcp" && !canBind(port.hostPort, port.hostAddress)
+        }
+        guard let taken else {
+            return DockerAPIError(500, "driver failed programming external connectivity on endpoint \(container.id): a published port is already allocated by another program on this Mac")
+        }
+        let address = taken.hostAddress ?? "0.0.0.0"
+        return DockerAPIError(500, "driver failed programming external connectivity on endpoint \(container.id): Bind for \(address):\(taken.hostPort) failed: port is already allocated (another program on this Mac listens on it)")
+    }
+
+    /// Whether `address:port` binds the way the runtime binds it (SO_REUSEADDR).
+    static func canBind(_ port: Int, _ address: String?) -> Bool {
+        let host = address ?? "0.0.0.0"
+        let family = host.contains(":") ? AF_INET6 : AF_INET
+        let fd = socket(family, SOCK_STREAM, 0)
+        guard fd >= 0, (0...65535).contains(port) else { return true }
+        defer { close(fd) }
+        var reuse: Int32 = 1
+        setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse, socklen_t(MemoryLayout.size(ofValue: reuse)))
+        if family == AF_INET6 {
+            var target = sockaddr_in6()
+            target.sin6_len = UInt8(MemoryLayout<sockaddr_in6>.size)
+            target.sin6_family = sa_family_t(AF_INET6)
+            target.sin6_port = UInt16(port).bigEndian
+            guard inet_pton(AF_INET6, host, &target.sin6_addr) == 1 else { return true }
+            return withUnsafePointer(to: &target) {
+                $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { bind(fd, $0, socklen_t(MemoryLayout<sockaddr_in6>.size)) == 0 }
+            }
+        }
+        var target = sockaddr_in()
+        target.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
+        target.sin_family = sa_family_t(AF_INET)
+        target.sin_port = UInt16(port).bigEndian
+        guard inet_pton(AF_INET, host, &target.sin_addr) == 1 else { return true }
+        return withUnsafePointer(to: &target) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { bind(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size)) == 0 }
+        }
+    }
+
+    /// `container start` refuses to boot with a bind source that is gone;
+    /// say which, rather than the runtime's error from deep in the boot.
+    static func checkMountSources(_ container: Container) throws {
+        for mount in container.configuration.mounts ?? [] where mount.volumeName == nil {
+            guard let source = mount.source, source.hasPrefix("/") else { continue }
+            if !FileManager.default.fileExists(atPath: source) {
+                throw DockerAPIError(500, "mount source path '\(source)' does not exist")
+            }
         }
     }
 
