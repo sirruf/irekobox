@@ -271,8 +271,20 @@ public enum ExecAPI {
             bridge.markStarted()
         } catch {
             bridge.closeContainerEnds()
-            await execs.finish(id, code: nil)
-            throw DockerAPIError(500, error.localizedDescription)
+            // As Docker: the stream opens, carries the error, and the exec
+            // exits 127 (not found) or 126 (can't run). Testcontainers' port
+            // check execs a shell that images like Ryuk don't have.
+            let message = "OCI runtime exec failed: \(error.localizedDescription)"
+            let missing = ["no such file", "not found"].contains { message.localizedCaseInsensitiveContains($0) }
+            await execs.finish(id, code: missing ? 127 : 126)
+            let type = tty ? "application/vnd.docker.raw-stream" : "application/vnd.docker.multiplexed-stream"
+            return HTTPResponse(status: 200, headers: [("Content-Type", type)], body: .hijack { connection in
+                let payload = Data((message + "\r\n").utf8)
+                if record.attachStdout || record.attachStderr {
+                    try? await connection.write(tty ? payload : LogsStatsAPI.frame(payload))
+                }
+                connection.closeWrite()
+            })
         }
         let type = tty ? "application/vnd.docker.raw-stream" : "application/vnd.docker.multiplexed-stream"
         return HTTPResponse(status: 200, headers: [("Content-Type", type)], body: .hijack { connection in
