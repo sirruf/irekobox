@@ -21,8 +21,10 @@ public actor HostsSync {
     /// name|started → when writing last failed (retried after a while).
     private var failed: [String: Date] = [:]
     private var loop: Task<Void, Never>?
-    private var syncing = false
-    private var again = false
+    /// Rounds asked for and done; a round covers every request made before it began.
+    private var requested = 0
+    private var completed = 0
+    private var running: Task<Void, Never>?
     private let log = Logger(subsystem: "com.irekobox", category: "hosts")
 
     public init(backend: DockerBackend) {
@@ -46,14 +48,27 @@ public actor HostsSync {
 
     /// Bring every file up to date now (also after a start through the API,
     /// so a service doesn't wait for the next round to find its peers).
+    /// Returns once a round that began after the call has finished: one
+    /// already under way may have listed the containers before this caller's
+    /// started, and a service that starts at once (nginx resolving its
+    /// upstreams) must find its neighbours in the file.
     public func sync() async {
-        if syncing { again = true; return }
-        syncing = true
-        defer { syncing = false }
-        repeat {
-            again = false
-            await round()
-        } while again
+        requested += 1
+        let target = requested
+        while completed < target {
+            if let running {
+                await running.value
+                continue
+            }
+            let covers = requested
+            let task = Task {
+                await self.round()
+                self.completed = max(self.completed, covers)
+                self.running = nil
+            }
+            running = task
+            await task.value
+        }
     }
 
     private func round() async {

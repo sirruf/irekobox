@@ -326,6 +326,69 @@ final class HostsSyncTests: XCTestCase {
         XCTAssertTrue(cacheHosts.contains("10.1.0.3\tweb app-web-1\n"))
     }
 
+    /// Slow copies; the containers it lists can change between rounds.
+    private final class Neighbours: DockerBackend, @unchecked Sendable {
+        private let lock = NSLock()
+        private var _containers: [Container] = []
+        private var _copies: [String] = []
+        var containers: [Container] {
+            get { lock.withLock { _containers } }
+            set { lock.withLock { _containers = newValue } }
+        }
+        var copies: [String] { lock.withLock { _copies } }
+        func copy(from source: String, to destination: String) async throws {
+            try await Task.sleep(for: .milliseconds(150))
+            lock.withLock { _copies.append(destination) }
+        }
+        func listContainers(all: Bool) async throws -> [Container] { containers }
+        func waitContainer(_ id: String) async throws -> ContainerExit { ContainerExit(code: 0, exitedAt: nil) }
+        func systemStatus() async throws -> SystemStatus? { nil }
+        func systemProperties() async throws -> String { "" }
+        func listImages() async throws -> [ContainerImage] { [] }
+        func startContainer(_ id: String) async throws {}
+        func stopContainer(_ id: String, timeout: Int32?, signal: String?) async throws {}
+        func killContainer(_ id: String, signal: String?) async throws {}
+        func deleteContainer(_ id: String, force: Bool) async throws {}
+        func createContainer(_ arguments: [String]) async throws {}
+        func createVolume(_ name: String) async throws {}
+        func deleteVolume(_ name: String) async throws {}
+        func pullImage(_ reference: String, platform: String?) -> AsyncThrowingStream<String, Error> { AsyncThrowingStream { $0.finish() } }
+        func containerLogs(_ id: String, follow: Bool) -> AsyncThrowingStream<String, Error> { AsyncThrowingStream { $0.finish() } }
+        func containerStats(_ id: String) async throws -> ContainerStats { throw EngineError.notFound(id) }
+        func bootstrapContainer(_ id: String, stdio: ProcessStdio) async throws {}
+        func createProcess(_ container: String, process: String, spec: ProcessSpec, stdio: ProcessStdio) async throws {}
+        func startProcess(_ container: String, process: String) async throws {}
+        func resizeProcess(_ container: String, process: String, width: Int, height: Int) async throws {}
+        func waitProcess(_ container: String, process: String) async throws -> ContainerExit { ContainerExit(code: 0, exitedAt: nil) }
+        func execute(_ id: String, command: [String]) async throws -> Data { Data() }
+        func exportContainer(_ id: String, to path: String) async throws {}
+        func startServices() async throws {}
+        func deleteImage(_ reference: String, force: Bool) async throws {}
+        func pruneImages(all: Bool) async throws {}
+        func inspectImage(_ reference: String) async throws -> ImageDetails { throw EngineError.notFound(reference) }
+        func tagImage(_ source: String, as target: String) async throws {}
+        func saveImages(_ references: [String], platform: String?, to path: String) async throws {}
+        func loadImages(from path: String) async throws -> String { "" }
+        func pushImage(_ reference: String) -> AsyncThrowingStream<String, Error> { AsyncThrowingStream { $0.finish() } }
+        func buildImage(_ options: BuildOptions) -> AsyncThrowingStream<String, Error> { AsyncThrowingStream { $0.finish() } }
+    }
+
+    /// A start that comes while another round is writing must not return
+    /// before its own file is written (nginx resolves its upstreams at once).
+    func testSyncWaitsForARoundThatSeesTheCaller() async throws {
+        let engine = Neighbours()
+        let backend = try container("app-backend-1", networks: [("app_default", "10.4.0.2")],
+                                    labels: ["com.docker.compose.service": "backend"])
+        engine.containers = [backend]
+        let hosts = HostsSync(backend: engine)
+        let first = Task { await hosts.sync() }
+        try await Task.sleep(for: .milliseconds(50))    // the first round is copying now
+        engine.containers = [backend, try container("app-web-1", networks: [("app_default", "10.4.0.3")])]
+        await hosts.sync()
+        XCTAssertTrue(engine.copies.contains("app-web-1:/etc/hosts"), "web's file is written before its start returns")
+        await first.value
+    }
+
     func testComposeServiceLabelIsTheFallbackAlias() throws {
         let db = try container("shop-db-1", networks: [("shop_default", "10.3.0.2")],
                                labels: ["com.docker.compose.service": "db"])
