@@ -61,6 +61,8 @@ public final class DockerAPIServer: @unchecked Sendable {
             }
 
             let response = await router.handle(request)
+            // A body spilled to disk is gone once the response is written.
+            defer { if let file = request.bodyFile { HTTPRequest.removeBodyFile(file) } }
             if Self.trace {
                 FileHandle.standardError.write(Data("[docker-api] \(request.method) \(request.target) -> \(response.status)\(request.wantsUpgrade ? " (upgrade)" : "")\n".utf8))
             }

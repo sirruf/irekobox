@@ -97,6 +97,15 @@ public struct ComposePlanner: Sendable {
 
     // MARK: - Run argv
 
+    /// `container` refuses "=" in a label value; such values are written as
+    /// `ib64:` + unpadded base64url, the format ContainerKit's `LabelValue` reads.
+    static func labelValue(_ value: String) -> String {
+        guard value.contains("=") else { return value }
+        return "ib64:" + Data(value.utf8).base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+    }
+
     private func runArguments(
         service: Service, serviceName: String, containerName: String,
         image: String, project: String, defaultNetwork: String, file: ComposeFile,
@@ -108,7 +117,7 @@ public struct ComposePlanner: Sendable {
         args += ["--label", "com.docker.compose.project=\(project)",
                  "--label", "com.docker.compose.service=\(serviceName)"]
         for key in extraLabels.keys.sorted() {
-            args += ["--label", "\(key)=\(extraLabels[key]!)"]
+            args += ["--label", "\(key)=\(Self.labelValue(extraLabels[key]!))"]
         }
 
         // Networks. With a local DNS domain the first one carries the name
@@ -179,7 +188,7 @@ public struct ComposePlanner: Sendable {
         for cap in service.capDrop ?? [] { args += ["--cap-drop", cap] }
         for dns in service.dns?.values ?? [] { args += ["--dns", dns] }
         for label in service.labels?.pairs ?? [] {
-            args += ["--label", label.value.map { "\(label.key)=\($0)" } ?? label.key]
+            args += ["--label", label.value.map { "\(label.key)=\(Self.labelValue($0))" } ?? label.key]
         }
         // The background agent's supervisor reads this label (same key the
         // Docker API writes for `--restart`).

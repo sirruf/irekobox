@@ -1,4 +1,5 @@
 import Foundation
+import ContainerKit
 
 /// `POST /containers/create` body (the subset clients send), decoded leniently.
 struct CreateRequest: Decodable {
@@ -145,6 +146,9 @@ enum CreateMapping {
         var warnings: [String]
         /// Anonymous volumes to create first: (volume name, mount path).
         var anonymousVolumes: [(name: String, path: String)]
+        /// Every volume mount, named or anonymous: (volume name, mount path).
+        var volumeMounts: [(name: String, path: String)] = []
+        var image = ""
 
         static func == (lhs: Result, rhs: Result) -> Bool {
             lhs.arguments == rhs.arguments && lhs.warnings == rhs.warnings
@@ -190,21 +194,32 @@ enum CreateMapping {
 
         // Mounts.
         var anonymous: [(String, String)] = []
+        var volumeMounts: [(String, String)] = []
         for bind in host?.Binds ?? [] {
             args += ["-v", try bindSpec(bind)]
+            let parts = bind.split(separator: ":", omittingEmptySubsequences: false).map(String.init)
+            if parts.count >= 2, !parts[0].hasPrefix("/"), !parts[0].hasPrefix(".") { volumeMounts.append((parts[0], parts[1])) }
         }
         for mount in host?.Mounts ?? [] {
             guard let target = mount.Target, !target.isEmpty else {
                 throw DockerAPIError.badParameter("invalid mount config: Target is required")
+            }
+            // `--mount type=bind` takes folders only; `-v` takes a single
+            // file too (Compose secrets arrive as such mounts).
+            if (mount.Type ?? "").lowercased() == "bind", let source = mount.Source, isFile(source) {
+                args += ["-v", "\(source):\(target)" + (mount.ReadOnly == true ? ":ro" : "")]
+                continue
             }
             switch (mount.Type ?? "volume").lowercased() {
             case "bind", "volume":
                 var spec = "type=\(mount.Type?.lowercased() ?? "volume"),target=\(target)"
                 if let source = mount.Source, !source.isEmpty {
                     spec = "type=\(mount.Type?.lowercased() ?? "volume"),source=\(source),target=\(target)"
+                    if (mount.Type ?? "volume").lowercased() == "volume" { volumeMounts.append((source, target)) }
                 } else if (mount.Type ?? "volume").lowercased() == "volume" {
                     let volume = anonymousVolumeName(container: name, path: target)
                     anonymous.append((volume, target))
+                    volumeMounts.append((volume, target))
                     spec = "type=volume,source=\(volume),target=\(target)"
                 }
                 if mount.ReadOnly == true { spec += ",readonly" }
@@ -221,6 +236,7 @@ enum CreateMapping {
         for path in (request.Volumes ?? [:]).keys.sorted() where !mounted.contains(path) {
             let volume = anonymousVolumeName(container: name, path: path)
             anonymous.append((volume, path))
+            volumeMounts.append((volume, path))
             args += ["-v", "\(volume):\(path)"]
         }
         if !anonymous.isEmpty {
@@ -333,7 +349,7 @@ enum CreateMapping {
             warnings.append("Logging driver \"\(type)\" is not available; logs are kept by the runtime.")
         }
 
-        for key in labels.keys.sorted() { args += ["-l", "\(key)=\(labels[key]!)"] }
+        for key in labels.keys.sorted() { args += ["-l", "\(key)=\(LabelValue.encode(labels[key]!))"] }
 
         // Command: entrypoint's first word goes to --entrypoint, the rest
         // leads the arguments.
@@ -345,7 +361,8 @@ enum CreateMapping {
         args.append(image)
         args += Array(entrypoint.dropFirst()) + command
 
-        return Result(arguments: args, warnings: warnings, anonymousVolumes: anonymous)
+        return Result(arguments: args, warnings: warnings, anonymousVolumes: anonymous,
+                      volumeMounts: volumeMounts, image: image)
     }
 
     /// Fields with no equivalent in a per-container VM: refused by name.
@@ -363,6 +380,11 @@ enum CreateMapping {
         }
         if let userns = host?.UsernsMode, !userns.isEmpty { try refuse("HostConfig.UsernsMode", "user namespaces are not configurable") }
         if !(host?.ExtraHosts ?? []).isEmpty { try refuse("HostConfig.ExtraHosts", "/etc/hosts entries can't be added") }
+    }
+
+    static func isFile(_ path: String) -> Bool {
+        var isDirectory: ObjCBool = false
+        return FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory) && !isDirectory.boolValue
     }
 
     /// `src:dst[:ro|rw|z|Z…]` → `src:dst[:ro]`.

@@ -291,7 +291,7 @@ public enum ImagesAPI {
         let folder = try ArchiveAPI.scratch()
         defer { try? FileManager.default.removeItem(at: folder) }
         let file = folder.appending(path: "load.tar")
-        try request.http.body.write(to: file)
+        try request.http.saveBody(to: file)
         let output: String
         do {
             output = try await backend.loadImages(from: file.path)
@@ -370,8 +370,11 @@ public enum ImagesAPI {
             throw DockerAPIError.badParameter("invalid reference format: \(text)")
         }
         // Native architecture unless asked: a plain `image pull` would unpack
-        // every platform of a multi-arch image.
-        let platform = request.query["platform"].flatMap { $0.isEmpty ? nil : $0 } ?? "linux/arm64"
+        // every platform of a multi-arch image. An image without an arm64
+        // variant falls back to amd64, which runs under Rosetta, as Docker
+        // on Apple silicon does.
+        let requested = request.query["platform"].flatMap { $0.isEmpty ? nil : $0 }
+        let platforms = requested.map { [$0] } ?? ["linux/arm64", "linux/amd64"]
         let label = reference.tag ?? reference.digest ?? "latest"
         // Docker prints "Pulling from library/alpine" (or "ghcr.io/x/y").
         let repository = reference.registry == "docker.io" ? reference.repository
@@ -383,21 +386,35 @@ public enum ImagesAPI {
                 if let data = try? JSONEncoder().encode(progress) { continuation.yield(data + Data("\n".utf8)) }
             }
             send(Progress(status: "Pulling from \(repository)", id: label))
-            do {
-                var lastPhase = ""
-                for try await line in backend.pullImage(reference.canonical, platform: platform) {
-                    guard let progress = PullProgress.parse(line) else { continue }
-                    let percent = progress.overall.map { Int(($0 * 100).rounded()) }
-                    if progress.phase == lastPhase && percent == nil { continue }
-                    lastPhase = progress.phase
-                    send(Progress(status: progress.phase,
-                                  progressDetail: percent.map { .init(current: $0, total: 100) },
-                                  id: label))
+            var firstError: Error?
+            for (index, platform) in platforms.enumerated() {
+                do {
+                    if index > 0 {
+                        send(Progress(status: "No \(platforms[0]) variant; pulling \(platform), which runs under Rosetta",
+                                      id: label))
+                    }
+                    var lastPhase = ""
+                    for try await line in backend.pullImage(reference.canonical, platform: platform) {
+                        guard let progress = PullProgress.parse(line) else { continue }
+                        let percent = progress.overall.map { Int(($0 * 100).rounded()) }
+                        if progress.phase == lastPhase && percent == nil { continue }
+                        lastPhase = progress.phase
+                        send(Progress(status: progress.phase,
+                                      progressDetail: percent.map { .init(current: $0, total: 100) },
+                                      id: label))
+                    }
+                    send(Progress(status: "Status: Downloaded newer image for \(reference.familiar)"))
+                    firstError = nil
+                    break
+                } catch is CancellationError {
+                    firstError = nil
+                    break
+                } catch {
+                    firstError = firstError ?? error
                 }
-                send(Progress(status: "Status: Downloaded newer image for \(reference.familiar)"))
-            } catch is CancellationError {
-            } catch {
-                let message = error.localizedDescription
+            }
+            if let firstError {
+                let message = firstError.localizedDescription
                 send(Progress(errorDetail: .init(message: message), error: message))
             }
             continuation.finish()

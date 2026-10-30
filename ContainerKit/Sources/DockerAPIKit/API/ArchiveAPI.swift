@@ -181,7 +181,7 @@ public enum ArchiveAPI {
         if created.state == .created, let path = request.query["path"], !path.isEmpty {
             let folder = try scratch()
             do {
-                try await Tar.extract(request.http.body, into: folder)
+                try await Tar.extract(request.http, into: folder)
             } catch {
                 try? FileManager.default.removeItem(at: folder)
                 throw error
@@ -196,7 +196,7 @@ public enum ArchiveAPI {
         }
         let folder = try scratch()
         defer { try? FileManager.default.removeItem(at: folder) }
-        try await Tar.extract(request.http.body, into: folder)
+        try await Tar.extract(request.http, into: folder)
         let entries = try FileManager.default.contentsOfDirectory(atPath: folder.path).sorted()
         for entry in entries {
             do {
@@ -293,6 +293,23 @@ enum Tar {
                 try? handle.close()
                 continuation.finish()
             }
+        }
+    }
+
+    /// Extract a request's tar body, from its file when it has one.
+    static func extract(_ request: HTTPRequest, into folder: URL) async throws {
+        guard let file = request.bodyFile else { return try await extract(request.body, into: folder) }
+        let tar = process(["-x", "-f", file.path, "-C", folder.path])
+        let errors = Pipe()
+        tar.standardError = errors
+        let exited = AsyncStream<Void> { continuation in
+            tar.terminationHandler = { _ in continuation.finish() }
+        }
+        try tar.run()
+        for await _ in exited {}
+        guard tar.terminationStatus == 0 else {
+            let message = String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+            throw DockerAPIError.badParameter("invalid tar archive: \(message.trimmingCharacters(in: .whitespacesAndNewlines))")
         }
     }
 

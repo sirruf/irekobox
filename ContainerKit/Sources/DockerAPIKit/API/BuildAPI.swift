@@ -83,7 +83,7 @@ public enum BuildAPI {
         let context = folder.appending(path: "context")
         do {
             try FileManager.default.createDirectory(at: context, withIntermediateDirectories: true)
-            try await Tar.extract(request.http.body, into: context)
+            try await Tar.extract(request.http, into: context)
             guard FileManager.default.fileExists(atPath: context.appending(path: plan.dockerfile).path) else {
                 throw DockerAPIError(400, "Cannot locate specified Dockerfile: \(plan.dockerfile)")
             }

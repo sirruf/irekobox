@@ -54,13 +54,23 @@ public struct Container: Codable, Identifiable, Hashable, Sendable {
         public let platform: Platform
         public let networks: [ConfiguredNetwork]
         public let initProcess: InitProcess
-        public let labels: [String: String]
+        /// Labels as stored; `labels` reads values encoded by ``LabelValue``.
+        private let rawLabels: [String: String]
+        public var labels: [String: String] {
+            rawLabels.contains { $0.value.hasPrefix(LabelValue.prefix) } ? rawLabels.mapValues(LabelValue.decode) : rawLabels
+        }
         public let creationDate: String
         public let readOnly: Bool
         public let runtimeHandler: String
         public let rosetta: Bool
         public let publishedPorts: [PublishedPort]?
         public let mounts: [Mount]?
+
+        enum CodingKeys: String, CodingKey {
+            case id, image, resources, platform, networks, initProcess, creationDate, readOnly
+            case runtimeHandler, rosetta, publishedPorts, mounts
+            case rawLabels = "labels"
+        }
     }
 
     /// A published port from `inspect` (`publishedPorts`).

@@ -9,7 +9,10 @@ public struct HTTPRequest: Sendable, Equatable {
     public var version: String
     /// Header fields in arrival order (names as sent).
     public var headers: [(name: String, value: String)]
+    /// The body, unless it was too large to keep in memory.
     public var body: Data
+    /// A large body, in a temporary file the server deletes after the response.
+    public var bodyFile: URL?
 
     public init(method: String, target: String, version: String = "HTTP/1.1",
                 headers: [(name: String, value: String)] = [], body: Data = Data()) {
@@ -73,9 +76,23 @@ public struct HTTPRequest: Sendable, Equatable {
         (header("Connection")?.lowercased().contains("upgrade") ?? false) && header("Upgrade") != nil
     }
 
+    /// Write the body to `url`, moving the temporary file when there is one.
+    public func saveBody(to url: URL) throws {
+        if let bodyFile {
+            try FileManager.default.moveItem(at: bodyFile, to: url)
+        } else {
+            try body.write(to: url)
+        }
+    }
+
+    /// Remove a body file and the private folder holding it.
+    static func removeBodyFile(_ url: URL) {
+        try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
+    }
+
     public static func == (lhs: HTTPRequest, rhs: HTTPRequest) -> Bool {
         lhs.method == rhs.method && lhs.target == rhs.target && lhs.version == rhs.version
-            && lhs.body == rhs.body
+            && lhs.body == rhs.body && lhs.bodyFile == rhs.bodyFile
             && lhs.headers.map { "\($0.name):\($0.value)" } == rhs.headers.map { "\($0.name):\($0.value)" }
     }
 }

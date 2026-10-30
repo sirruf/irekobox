@@ -189,7 +189,7 @@ public enum ContainersAPI {
         }
         guard present else { throw DockerAPIError(404, "No such image: \(reference.familiar)") }
 
-        let warnings = try await make(config, name: name, platform: request.query["platform"], backend)
+        let warnings = try await make(config, name: name, platform: request.query["platform"], backend, fillVolumes: true)
         await renames.remember(name, Renames.Spec(body: body, platform: request.query["platform"]))
         let created = try await directory.resolve(name)
         return .json(CreateResponse(Id: created.id, Warnings: warnings), status: 201)
@@ -197,7 +197,7 @@ public enum ContainersAPI {
 
     /// Create `name` from a Docker create request; the warnings to pass on.
     private static func make(_ config: CreateRequest, name: String, platform: String?,
-                             _ backend: DockerBackend) async throws -> [String] {
+                             _ backend: DockerBackend, fillVolumes: Bool = false) async throws -> [String] {
         let mapping = try CreateMapping.arguments(config, name: name, platform: platform,
                                                   dnsName: await serviceDNSName(config, backend),
                                                   freePort: FreePort.pick)
@@ -211,6 +211,16 @@ public enum ContainersAPI {
         } catch {
             for volume in made { try? await backend.deleteVolume(volume) }
             throw error
+        }
+        if fillVolumes {
+            var fresh: [(name: String, path: String)] = []
+            for mount in mapping.volumeMounts where await FreshVolumes.shared.take(mount.name)
+                || mapping.anonymousVolumes.contains(where: { $0.name == mount.name }) {
+                fresh.append(mount)
+            }
+            if !fresh.isEmpty {
+                await FreshVolumes.copyUp(fresh, image: mapping.image, container: name, backend: backend)
+            }
         }
         return mapping.warnings
     }

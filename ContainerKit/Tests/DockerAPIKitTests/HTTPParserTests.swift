@@ -74,6 +74,29 @@ final class HTTPParserTests: XCTestCase {
         XCTAssertEqual(try parser.next()?.body.count, 2048 * 0x1000)
     }
 
+    func testLargeBodyGoesToAFileAndArrivesWhole() throws {
+        for framing in ["Content-Length: 3000", "Transfer-Encoding: chunked"] {
+            var parser = HTTPParser(memoryLimit: 1000)
+            parser.feed(Data("POST /images/load HTTP/1.1\r\n\(framing)\r\n\r\n".utf8))
+            let payload = Data((0..<3000).map { UInt8($0 % 251) })
+            var request: HTTPRequest?
+            for start in stride(from: 0, to: payload.count, by: 700) {
+                let piece = payload[start..<min(start + 700, payload.count)]
+                parser.feed(framing.hasPrefix("Transfer") ? Data(String(piece.count, radix: 16).utf8) + Data("\r\n".utf8) + piece + Data("\r\n".utf8) : piece)
+                request = try parser.next() ?? request
+            }
+            if framing.hasPrefix("Transfer") {
+                parser.feed(Data("0\r\n\r\n".utf8))
+                request = try parser.next()
+            }
+            let file = try XCTUnwrap(request?.bodyFile, framing)
+            XCTAssertTrue(request?.body.isEmpty ?? false)
+            XCTAssertEqual(try Data(contentsOf: file), payload, framing)
+            HTTPRequest.removeBodyFile(file)
+            XCTAssertFalse(FileManager.default.fileExists(atPath: file.path))
+        }
+    }
+
     func testPipelinedRequestsAndLeftoverBytes() throws {
         var parser = HTTPParser()
         let raw = "GET /_ping HTTP/1.1\r\n\r\nGET /version HTTP/1.1\r\n\r\n"

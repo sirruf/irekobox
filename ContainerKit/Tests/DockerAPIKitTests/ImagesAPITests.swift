@@ -29,7 +29,13 @@ private final class ImageEngine: DockerBackend, @unchecked Sendable {
     func createContainer(_ arguments: [String]) async throws {}
     func createVolume(_ name: String) async throws {}
     func deleteVolume(_ name: String) async throws {}
-    func pullImage(_ reference: String, platform: String?) -> AsyncThrowingStream<String, Error> { AsyncThrowingStream { $0.finish() } }
+    /// Platforms a pull fails for, as an image without that variant does.
+    var missingPlatforms: Set<String> = []
+    func pullImage(_ reference: String, platform: String?) -> AsyncThrowingStream<String, Error> {
+        record("pull \(reference) \(platform ?? "-")")
+        let missing = platform.map { missingPlatforms.contains($0) } ?? false
+        return AsyncThrowingStream { $0.finish(throwing: missing ? EngineError.notFound(reference) : nil) }
+    }
     func containerLogs(_ id: String, follow: Bool) -> AsyncThrowingStream<String, Error> { AsyncThrowingStream { $0.finish() } }
     func containerStats(_ id: String) async throws -> ContainerStats { throw EngineError.notFound(id) }
     func bootstrapContainer(_ id: String, stdio: ProcessStdio) async throws {}
@@ -89,6 +95,33 @@ final class ImagesAPITests: XCTestCase {
     private func json(_ response: HTTPResponse) throws -> Any {
         guard case .data(let data) = response.body else { return [] }
         return try JSONSerialization.jsonObject(with: data)
+    }
+
+    private func pullOutput(_ router: DockerRouter, _ target: String) async throws -> String {
+        let response = await router.handle(HTTPRequest(method: "POST", target: target))
+        guard case .stream(let stream) = response.body else { return "" }
+        var text = ""
+        for try await chunk in stream { text += String(decoding: chunk, as: UTF8.self) }
+        return text
+    }
+
+    func testPullFallsBackToAmd64WhenThereIsNoArm64Variant() async throws {
+        let (router, engine) = try setUp()
+        engine.missingPlatforms = ["linux/arm64"]
+        let output = try await pullOutput(router, "/images/create?fromImage=redislabs/redismod&tag=latest")
+        XCTAssertEqual(engine.calls.filter { $0.hasPrefix("pull") },
+                       ["pull docker.io/redislabs/redismod:latest linux/arm64",
+                        "pull docker.io/redislabs/redismod:latest linux/amd64"])
+        XCTAssertTrue(output.contains("Downloaded newer image"))
+        XCTAssertFalse(output.contains("errorDetail"))
+    }
+
+    func testPullWithAnExplicitPlatformDoesNotFallBack() async throws {
+        let (router, engine) = try setUp()
+        engine.missingPlatforms = ["linux/arm64"]
+        let output = try await pullOutput(router, "/images/create?fromImage=alpine&tag=3&platform=linux/arm64")
+        XCTAssertEqual(engine.calls.filter { $0.hasPrefix("pull") }.count, 1)
+        XCTAssertTrue(output.contains("errorDetail"))
     }
 
     func testListGroupsTagsAndHidesSystemImages() async throws {

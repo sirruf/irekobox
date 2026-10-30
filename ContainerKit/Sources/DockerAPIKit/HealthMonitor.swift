@@ -112,8 +112,12 @@ public actor HealthMonitor {
     }
 
     /// The current health of this run of the container, if it has a check.
+    /// A running container with a check the monitor hasn't reached yet is
+    /// "starting": with no Health at all, `compose up --wait` would decide it
+    /// has no check and fail.
     public func health(for container: Container) -> Health? {
-        tracked[Self.key(container)]?.health
+        if let tracked = tracked[Self.key(container)] { return tracked.health }
+        return container.state.isRunning && Self.config(container) != nil ? Health() : nil
     }
 
     /// name → status, for every running container with a check.

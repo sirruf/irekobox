@@ -66,6 +66,21 @@ final class CreateMappingTests: XCTestCase {
         XCTAssertEqual(label?.split(separator: "=").last?.split(separator: ",").count, 2)
     }
 
+    func testSingleFileBindMountsUseVolumeSyntax() throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "ib-binds-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let secret = folder.appending(path: "password.txt").path
+        try Data("x".utf8).write(to: URL(fileURLWithPath: secret))
+        let result = try map("""
+        {"Image":"mysql","HostConfig":{"Mounts":[
+          {"Type":"bind","Source":"\(secret)","Target":"/run/secrets/db-password","ReadOnly":true},
+          {"Type":"bind","Source":"\(folder.path)","Target":"/data"}]}}
+        """)
+        XCTAssertTrue(result.arguments.contains("\(secret):/run/secrets/db-password:ro"), "a file goes through -v")
+        XCTAssertTrue(result.arguments.contains("type=bind,source=\(folder.path),target=/data"), "a folder keeps --mount")
+    }
+
     func testNetworksWithAliases() throws {
         let result = try map(#"""
         {"Image":"app","HostConfig":{"NetworkMode":"shop_default"},

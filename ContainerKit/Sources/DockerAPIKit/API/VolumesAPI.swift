@@ -119,6 +119,7 @@ public enum VolumesAPI {
             return .json(model(existing, users: containers), status: 201)
         }
         try await ContainersAPI.engine { try await backend.createVolume(name, labels: spec.Labels ?? [:], size: size) }
+        await FreshVolumes.shared.add(name)
         let volume = try await find(name, backend)
         return .json(model(volume, users: containers), status: 201)
     }
@@ -178,5 +179,44 @@ public enum VolumesAPI {
         let parts = filter.split(separator: "=", maxSplits: 1).map(String.init)
         if parts.count == 2 { return labels[parts[0]] == parts[1] }
         return labels[parts[0]] != nil
+    }
+}
+
+/// Volumes made through the API and not mounted yet. Docker fills an empty
+/// volume from the image the first time a container mounts it (contents,
+/// owner and mode of that folder); `container` doesn't, so Irekobox does.
+public actor FreshVolumes {
+    public static let shared = FreshVolumes()
+    private var names: Set<String> = []
+
+    func add(_ name: String) { names.insert(name) }
+
+    /// True once per fresh volume.
+    func take(_ name: String) -> Bool { names.remove(name) != nil }
+
+    /// Copy `path` of `image` into each volume, as root, keeping owners and
+    /// modes. Best effort: an image without a shell, or without that folder,
+    /// leaves the volume as it is.
+    static func copyUp(_ mounts: [(name: String, path: String)], image: String, container: String,
+                       backend: DockerBackend) async {
+        for (index, mount) in mounts.enumerated() {
+            let helper = "\(container)-copyup-\(index)"
+            let script = """
+            s=\(shellQuote(mount.path)); [ -d "$s" ] || exit 0
+            cp -a "$s"/. /.irekobox-copyup/ && chown "$(stat -c %u:%g "$s")" /.irekobox-copyup \\
+              && chmod "$(stat -c %a "$s")" /.irekobox-copyup
+            """
+            do {
+                try await backend.createContainer(["--name", helper, "--entrypoint", "/bin/sh", "-u", "0",
+                                                   "-v", "\(mount.name):/.irekobox-copyup", image, "-c", script])
+                try await backend.startContainer(helper)
+                _ = try await backend.waitContainer(helper)
+            } catch {}
+            try? await backend.deleteContainer(helper, force: true)
+        }
+    }
+
+    static func shellQuote(_ text: String) -> String {
+        "'" + text.replacingOccurrences(of: "'", with: "'\\''") + "'"
     }
 }
