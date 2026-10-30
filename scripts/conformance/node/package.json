@@ -1,0 +1,8 @@
+{
+  "name": "irekobox-conformance",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "testcontainers": "^11.0.0"
+  }
+}

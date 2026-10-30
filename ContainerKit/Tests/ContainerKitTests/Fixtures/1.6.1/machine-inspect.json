@@ -1,0 +1,32 @@
+[
+  {
+    "containerId" : "ibk-test-61bb20",
+    "cpus" : 5,
+    "createdDate" : "2026-10-26T11:19:03Z",
+    "diskSize" : 43859968,
+    "homeMount" : "rw",
+    "id" : "ibk-test",
+    "image" : {
+      "descriptor" : {
+        "digest" : "sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a",
+        "mediaType" : "application\/vnd.oci.image.index.v1+json",
+        "size" : 9218
+      },
+      "reference" : "docker.io\/library\/alpine:latest"
+    },
+    "ipAddress" : "192.168.66.113",
+    "memory" : 17179869184,
+    "platform" : {
+      "architecture" : "arm64",
+      "os" : "linux"
+    },
+    "startedDate" : "2026-10-26T11:19:04Z",
+    "status" : "running",
+    "userSetup" : {
+      "gid" : 20,
+      "home" : "\/home\/fixture",
+      "uid" : 501,
+      "username" : "fixture"
+    }
+  }
+]

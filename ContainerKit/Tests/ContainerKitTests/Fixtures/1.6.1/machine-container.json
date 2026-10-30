@@ -1,0 +1,157 @@
+[
+  {
+    "configuration" : {
+      "capAdd" : [
+        "ALL"
+      ],
+      "capDrop" : [
+
+      ],
+      "creationDate" : "2026-10-26T11:19:03Z",
+      "dns" : {
+        "domain" : "machine",
+        "nameservers" : [
+
+        ],
+        "options" : [
+
+        ],
+        "searchDomains" : [
+          "machine"
+        ]
+      },
+      "id" : "ibk-test-61bb20",
+      "image" : {
+        "descriptor" : {
+          "digest" : "sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a",
+          "mediaType" : "application/vnd.oci.image.index.v1+json",
+          "size" : 9218
+        },
+        "reference" : "docker.io/library/alpine:latest"
+      },
+      "initProcess" : {
+        "arguments" : [
+
+        ],
+        "environment" : [
+          "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+          "CONTAINER_MACHINE_ID=ibk-test",
+          "CONTAINER_USER=fixture",
+          "CONTAINER_HOME=/home/fixture",
+          "CONTAINER_UID=501",
+          "CONTAINER_GID=20"
+        ],
+        "executable" : "/sbin.machine/init",
+        "rlimits" : [
+
+        ],
+        "supplementalGroups" : [
+
+        ],
+        "terminal" : true,
+        "user" : {
+          "id" : {
+            "gid" : 0,
+            "uid" : 0
+          }
+        },
+        "workingDirectory" : "/"
+      },
+      "labels" : {
+        "com.apple.container.plugin" : "machine"
+      },
+      "maskedPaths" : [
+
+      ],
+      "mounts" : [
+        {
+          "destination" : "/sbin.machine",
+          "options" : [
+            "ro"
+          ],
+          "source" : "/Users/fixture/Library/Application Support/com.apple.container/plugin-state/machine-apiserver/machines/ibk-test/sbin.machine",
+          "type" : {
+            "virtiofs" : {
+
+            }
+          }
+        },
+        {
+          "destination" : "/etc/.machine.initialized",
+          "options" : [
+            "rw"
+          ],
+          "source" : "/Users/fixture/Library/Application Support/com.apple.container/plugin-state/machine-apiserver/machines/ibk-test/machine.initialized",
+          "type" : {
+            "virtiofs" : {
+
+            }
+          }
+        },
+        {
+          "destination" : "/Users/fixture",
+          "options" : [
+            "rw"
+          ],
+          "source" : "/Users/fixture",
+          "type" : {
+            "virtiofs" : {
+
+            }
+          }
+        }
+      ],
+      "networks" : [
+        {
+          "network" : "default",
+          "options" : {
+            "hostname" : "ibk-test.machine."
+          }
+        }
+      ],
+      "platform" : {
+        "architecture" : "arm64",
+        "os" : "linux"
+      },
+      "publishedPorts" : [
+
+      ],
+      "publishedSockets" : [
+
+      ],
+      "readOnly" : false,
+      "readonlyPaths" : [
+
+      ],
+      "resources" : {
+        "cpuOverhead" : 0,
+        "cpus" : 5,
+        "memoryInBytes" : 17179869184
+      },
+      "rosetta" : false,
+      "runtimeHandler" : "container-runtime-linux",
+      "ssh" : true,
+      "sysctls" : {
+
+      },
+      "useInit" : false,
+      "virtualization" : false
+    },
+    "id" : "ibk-test-61bb20",
+    "status" : {
+      "networks" : [
+        {
+          "hostname" : "ibk-test.machine.",
+          "ipv4Address" : "192.168.66.113/24",
+          "ipv4Gateway" : "192.168.66.1",
+          "ipv6Address" : "fdac:b0dc:efd6:5247:fcab:4ff:fe2c:2cac/64",
+          "macAddress" : "fe:ab:04:2c:2c:ac",
+          "network" : "default",
+          "variant" : "reserved"
+        }
+      ],
+      "startedDate" : "2026-10-26T11:19:04Z",
+      "state" : "running"
+    }
+  }
+]

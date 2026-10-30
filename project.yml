@@ -1,0 +1,258 @@
+# XcodeGen spec — source of truth for the Xcode app wrapper.
+# Generate with:  xcodegen   (produces Irekobox.xcodeproj, git-ignored)
+#
+# The app target is a thin @main App (Sources/Irekobox) that links the
+# AppCore library product from the local Swift package (which pulls in
+# ContainerKit/ComposeKit/StackKit/MigrationKit + SwiftTerm/Yams).
+#
+# NOTE: the Xcode app *target* is named `IrekoboxApp` so it does not
+# collide with the SwiftPM `executableTarget` named `Irekobox` inside the
+# linked local package. That collision confuses xcodebuild's product graph and
+# breaks XCUITest host-app resolution (the runner looks for a bare
+# `Irekobox` executable instead of `Irekobox.app`). The shipped
+# bundle is still `Irekobox.app` via PRODUCT_NAME below.
+name: Irekobox
+
+options:
+  bundleIdPrefix: com.irekobox
+  deploymentTarget:
+    macOS: "26.0"
+  createIntermediateGroups: true
+  # Strings live in String Catalogs (scripts/sync-strings.sh fills them).
+  developmentLanguage: en
+
+packages:
+  Irekobox:
+    path: .
+  ContainerKit:
+    path: ContainerKit
+
+targets:
+  IrekoboxApp:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/Irekobox
+      # App icon: an Icon Composer document (layers for Liquid Glass).
+      - path: Resources/AppIcon.icon
+        type: file
+        buildPhase: resources
+      # LaunchAgent definition for the background agent (SMAppService.agent).
+      - path: Resources/LaunchAgents/com.irekobox.agent.plist
+        buildPhase:
+          copyFiles:
+            destination: wrapper
+            subpath: Contents/Library/LaunchAgents
+      # LaunchDaemon for the /var/run/docker.sock helper (SMAppService.daemon).
+      - path: Resources/LaunchDaemons/com.irekobox.socketlink.plist
+        buildPhase:
+          copyFiles:
+            destination: wrapper
+            subpath: Contents/Library/LaunchDaemons
+    dependencies:
+      - package: Irekobox
+        product: AppCore
+      # Background agent binary, run by launchd from Contents/MacOS.
+      - target: IrekoboxAgent
+        embed: true
+        codeSign: false
+        copy:
+          destination: executables
+      # Widgets and the Control Center control (Contents/PlugIns).
+      - target: IrekoboxWidgets
+      # MCP server for AI assistants, started by their clients.
+      - target: IrekoboxMCP
+        embed: true
+        codeSign: false
+        copy:
+          destination: executables
+      # Root helper for /var/run/docker.sock, run by launchd when approved.
+      - target: IrekoboxSocketLink
+        embed: true
+        codeSign: false
+        copy:
+          destination: executables
+    # irekobox:// links from the widgets.
+    info:
+      path: Resources/App-Info.plist
+      properties:
+        CFBundleURLTypes:
+          - CFBundleURLName: com.irekobox.app
+            CFBundleURLSchemes: [irekobox]
+        CFBundleLocalizations: [en, ru, zh-Hans, ja, de]
+    # The app group the widgets read the app's snapshot from.
+    entitlements:
+      path: Resources/Irekobox.entitlements
+      properties:
+        com.apple.security.application-groups: [YBKR9G3374.com.irekobox.shared]
+    settings:
+      base:
+        PRODUCT_NAME: Irekobox
+        PRODUCT_BUNDLE_IDENTIFIER: com.irekobox.app
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "6.0"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.developer-tools"
+        INFOPLIST_KEY_NSHumanReadableCopyright: "© 2026 Artem Kolesnikov"
+        # Non-sandboxed Developer ID app (it spawns the `container` CLI).
+        ENABLE_APP_SANDBOX: NO
+        ENABLE_HARDENED_RUNTIME: YES
+        # Signed with the team's Apple Development identity: SMAppService only
+        # registers the embedded agent from a properly signed bundle. Release
+        # builds are re-signed with Developer ID for notarization.
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: YBKR9G3374
+
+  # Background agent: hosts the engine store with the app closed. A plain
+  # command-line tool embedded in the app bundle and launched by launchd.
+  IrekoboxAgent:
+    type: tool
+    platform: macOS
+    sources:
+      - path: Sources/IrekoboxAgent
+    dependencies:
+      - package: ContainerKit
+        product: EngineCore
+      - package: ContainerKit
+        product: DockerAPIKit
+    settings:
+      base:
+        PRODUCT_NAME: IrekoboxAgent
+        PRODUCT_BUNDLE_IDENTIFIER: com.irekobox.agent
+        # Reported by the Docker API (`docker version`); keep in step with the app.
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "6.0"
+        GENERATE_INFOPLIST_FILE: YES
+        CREATE_INFOPLIST_SECTION_IN_BINARY: YES
+        ENABLE_HARDENED_RUNTIME: YES
+        SKIP_INSTALL: YES
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: YBKR9G3374
+
+  # Widgets and a Control Center control; sandboxed, reading the app group.
+  IrekoboxWidgets:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: Sources/IrekoboxWidgets
+    dependencies:
+      - package: ContainerKit
+        product: ContainerKit
+      - sdk: WidgetKit.framework
+      - sdk: SwiftUI.framework
+    info:
+      path: Resources/Widgets-Info.plist
+      properties:
+        CFBundleDisplayName: Irekobox
+        CFBundleLocalizations: [en, ru, zh-Hans, ja, de]
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: Resources/Widgets.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.application-groups: [YBKR9G3374.com.irekobox.shared]
+    settings:
+      base:
+        PRODUCT_NAME: IrekoboxWidgets
+        PRODUCT_BUNDLE_IDENTIFIER: com.irekobox.app.widgets
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "6.0"
+        GENERATE_INFOPLIST_FILE: YES
+        ENABLE_HARDENED_RUNTIME: YES
+        SKIP_INSTALL: YES
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: YBKR9G3374
+
+  # MCP server: AI assistants' clients run it over stdio (Settings › AI Assistants).
+  IrekoboxMCP:
+    type: tool
+    platform: macOS
+    sources:
+      - path: Sources/IrekoboxMCP
+    dependencies:
+      - package: ContainerKit
+        product: ContainerKit
+      - package: ContainerKit
+        product: MCPKit
+    settings:
+      base:
+        PRODUCT_NAME: IrekoboxMCP
+        PRODUCT_BUNDLE_IDENTIFIER: com.irekobox.mcp
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "6.0"
+        GENERATE_INFOPLIST_FILE: YES
+        CREATE_INFOPLIST_SECTION_IN_BINARY: YES
+        ENABLE_HARDENED_RUNTIME: YES
+        SKIP_INSTALL: YES
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: YBKR9G3374
+
+  # Root helper: points /var/run/docker.sock at the user's socket while the
+  # app asks for it (Settings > Docker). One pass per launchd run.
+  IrekoboxSocketLink:
+    type: tool
+    platform: macOS
+    sources:
+      - path: Sources/IrekoboxSocketLink
+    dependencies:
+      - package: ContainerKit
+        product: EngineCore
+      - sdk: SystemConfiguration.framework
+    settings:
+      base:
+        PRODUCT_NAME: IrekoboxSocketLink
+        PRODUCT_BUNDLE_IDENTIFIER: com.irekobox.socketlink
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "6.0"
+        GENERATE_INFOPLIST_FILE: YES
+        CREATE_INFOPLIST_SECTION_IN_BINARY: YES
+        ENABLE_HARDENED_RUNTIME: YES
+        SKIP_INSTALL: YES
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: YBKR9G3374
+
+  # XCUITest UI-testing bundle. Drives the app target end-to-end on macOS.
+  IrekoboxUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - path: UITests
+    dependencies:
+      - target: IrekoboxApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.irekobox.uitests
+        SWIFT_VERSION: "6.0"
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: IrekoboxApp
+        # UI-testing bundles launch the target app as a separate process; they
+        # must NOT inject into a host, so clear the unit-test-only loader/host
+        # settings XcodeGen otherwise injects (they resolve to a bad path and
+        # break test execution).
+        BUNDLE_LOADER: ""
+        TEST_HOST: ""
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: YBKR9G3374
+
+# Distinct scheme name avoids a collision with the SwiftPM-generated
+# "Irekobox" executable scheme. xcodebuild -scheme IrekoboxApp is
+# unambiguous.
+schemes:
+  IrekoboxApp:
+    build:
+      targets:
+        IrekoboxApp: all
+        IrekoboxUITests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - IrekoboxUITests

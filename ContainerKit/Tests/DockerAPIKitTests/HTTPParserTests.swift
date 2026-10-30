@@ -1,0 +1,85 @@
+import XCTest
+@testable import DockerAPIKit
+
+final class HTTPParserTests: XCTestCase {
+
+    private func parse(_ chunks: [String], parser: inout HTTPParser) throws -> [HTTPRequest] {
+        var requests: [HTTPRequest] = []
+        for chunk in chunks {
+            parser.feed(Data(chunk.utf8))
+            while let request = try parser.next() { requests.append(request) }
+        }
+        return requests
+    }
+
+    func testSimpleGetWithQuery() throws {
+        var parser = HTTPParser()
+        let requests = try parse(["GET /v1.45/containers/json?all=1&filters=%7B%22label%22%3A%5B%5D%7D HTTP/1.1\r\nHost: docker\r\nUser-Agent: Docker-Client/29.9.2\r\n\r\n"], parser: &parser)
+        XCTAssertEqual(requests.count, 1)
+        let request = try XCTUnwrap(requests.first)
+        XCTAssertEqual(request.method, "GET")
+        XCTAssertEqual(request.path, "/v1.45/containers/json")
+        XCTAssertEqual(request.query["all"], "1")
+        XCTAssertEqual(request.query["filters"], #"{"label":[]}"#)
+        XCTAssertEqual(request.header("user-agent"), "Docker-Client/29.9.2")
+        XCTAssertTrue(request.keepAlive)
+        XCTAssertTrue(request.body.isEmpty)
+    }
+
+    func testBodyArrivingInPieces() throws {
+        var parser = HTTPParser()
+        let pieces = ["POST /containers/create HTTP/1.1\r\nContent-Le", "ngth: 15\r\n\r\n{\"Image\":", "\"alp\"}"]
+        var requests = try parse(Array(pieces.prefix(2)), parser: &parser)
+        XCTAssertTrue(requests.isEmpty, "incomplete body")
+        requests = try parse([pieces[2]], parser: &parser)
+        XCTAssertEqual(requests.first?.body, Data(#"{"Image":"alp"}"#.utf8))
+    }
+
+    func testChunkedBodyWithExtensionsAndTrailers() throws {
+        var parser = HTTPParser()
+        let raw = "PUT /containers/x/archive?path=/tmp HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n"
+            + "5;name=value\r\nhello\r\n" + "6\r\n world\r\n" + "0\r\nX-Checksum: abc\r\n\r\n"
+        // Feed byte by byte: every split point must work.
+        var requests: [HTTPRequest] = []
+        for byte in raw.utf8 {
+            parser.feed(Data([byte]))
+            while let request = try parser.next() { requests.append(request) }
+        }
+        XCTAssertEqual(requests.count, 1)
+        XCTAssertEqual(requests.first?.body, Data("hello world".utf8))
+    }
+
+    func testPipelinedRequestsAndLeftoverBytes() throws {
+        var parser = HTTPParser()
+        let raw = "GET /_ping HTTP/1.1\r\n\r\nGET /version HTTP/1.1\r\n\r\n"
+            + "POST /containers/x/attach?stream=1 HTTP/1.1\r\nConnection: Upgrade\r\nUpgrade: tcp\r\n\r\nraw stdin bytes"
+        let requests = try parse([raw], parser: &parser)
+        XCTAssertEqual(requests.map(\.path), ["/_ping", "/version", "/containers/x/attach"])
+        XCTAssertTrue(requests[2].wantsUpgrade)
+        XCTAssertEqual(parser.takeRemaining(), Data("raw stdin bytes".utf8), "bytes after a hijack request")
+    }
+
+    func testConnectionPersistence() throws {
+        var parser = HTTPParser()
+        let requests = try parse(["GET / HTTP/1.0\r\n\r\n", "GET / HTTP/1.1\r\nConnection: close\r\n\r\n",
+                                  "GET / HTTP/1.0\r\nConnection: keep-alive\r\n\r\n"], parser: &parser)
+        XCTAssertEqual(requests.map(\.keepAlive), [false, false, true])
+    }
+
+    func testRejectsMalformedInput() {
+        func error(_ raw: String, limit: Int = 64 << 10) -> HTTPParser.ParseError? {
+            var parser = HTTPParser(maxHeadSize: limit, maxBodySize: 10)
+            parser.feed(Data(raw.utf8))
+            do { _ = try parser.next(); return nil } catch { return error as? HTTPParser.ParseError }
+        }
+        XCTAssertEqual(error("GARBAGE\r\n\r\n")?.status, 400)
+        XCTAssertEqual(error("GET /x HTTP/2.0\r\n\r\n")?.status, 400)
+        XCTAssertEqual(error("GET /x HTTP/1.1\r\nBad Header\r\n\r\n")?.status, 400)
+        XCTAssertEqual(error("POST /x HTTP/1.1\r\nContent-Length: -1\r\n\r\n")?.status, 400)
+        XCTAssertEqual(error("POST /x HTTP/1.1\r\nContent-Length: 11\r\n\r\n")?.status, 413)
+        XCTAssertEqual(error("POST /x HTTP/1.1\r\nTransfer-Encoding: gzip\r\n\r\n")?.status, 501)
+        XCTAssertEqual(error("POST /x HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\nzz\r\n")?.status, 400)
+        XCTAssertEqual(error("POST /x HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n3\r\nabcXY")?.status, 400)
+        XCTAssertEqual(error("GET /" + String(repeating: "a", count: 100) + " HTTP/1.1\r\n", limit: 32)?.status, 431)
+    }
+}

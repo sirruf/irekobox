@@ -1,0 +1,73 @@
+import Foundation
+
+/// Open-source code shipped inside Irekobox, with the licence texts their
+/// licences ask to travel with the app. Update when a dependency changes.
+struct Acknowledgement: Identifiable {
+    let name: String
+    let licence: String
+    let use: LocalizedStringResource
+    let url: URL
+    /// Full text; nil for what Irekobox drives but doesn't ship.
+    let text: String?
+    var id: String { name }
+
+    static let all: [Acknowledgement] = [
+        Acknowledgement(name: "SwiftTerm", licence: "MIT", use: "Terminals of containers, machines and pods",
+                        url: URL(string: "https://github.com/migueldeicaza/SwiftTerm")!, text: swiftTerm),
+        Acknowledgement(name: "Yams", licence: "MIT", use: "Reading Compose and Kubernetes YAML",
+                        url: URL(string: "https://github.com/jpsim/Yams")!, text: yams),
+        Acknowledgement(name: "Apple container", licence: "Apache License 2.0",
+                        use: "The engine Irekobox drives; installed separately, not shipped",
+                        url: URL(string: "https://github.com/apple/container")!, text: nil),
+    ]
+
+    private static let swiftTerm = #"""
+Copyright (c) 2019-2022 Miguel de Icaza (https://github.com/migueldeicaza)
+Copyright (c) 2017-2019, The xterm.js authors (https://github.com/xtermjs/xterm.js)
+Copyright (c) 2014-2016, SourceLair Private Company (https://www.sourcelair.com)
+Copyright (c) 2012-2013, Christopher Jeffrey (https://github.com/chjj/)
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+"""#
+
+    private static let yams = #"""
+The MIT License (MIT)
+
+Copyright (c) 2016 JP Simard.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""#
+}

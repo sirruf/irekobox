@@ -1,0 +1,22 @@
+[
+  {
+    "configuration" : {
+      "creationDate" : "2026-10-26T00:01:21Z",
+      "labels" : {
+
+      },
+      "mode" : "nat",
+      "name" : "ib-fx-net",
+      "options" : {
+
+      },
+      "plugin" : "container-network-vmnet"
+    },
+    "id" : "ib-fx-net",
+    "status" : {
+      "ipv4Gateway" : "192.168.66.1",
+      "ipv4Subnet" : "192.168.66.0/24",
+      "ipv6Subnet" : "fdac:b0dc:efd6:5247::/64"
+    }
+  }
+]

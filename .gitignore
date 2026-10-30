@@ -1,0 +1,39 @@
+# Build artifacts
+.DS_Store
+.build/
+ContainerKit/.build/
+DerivedData/
+.swiftpm/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# Signing & developer credentials — never commit
+*.p12
+*.p8
+*.pem
+*.cer
+*.der
+*.certSigningRequest
+*.mobileprovision
+*.provisionprofile
+*.keychain
+*.keychain-db
+AuthKey_*.p8
+ExportOptions.plist
+
+# Secrets / environment
+.env
+.env.*
+*.env
+secrets/
+*.secret
+*.secrets
+
+# Built app bundle
+Irekobox.app/
+
+# Generated Xcode project (source: project.yml)
+Irekobox.xcodeproj/
+
+# Release output (scripts/release.sh)
+/build/

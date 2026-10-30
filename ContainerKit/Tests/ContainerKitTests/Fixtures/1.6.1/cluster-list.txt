@@ -1,0 +1,2 @@
+CLUSTER  NODE   ROLE                  STATE    CPUS  MEMORY   ADDR            PORTS
+czk8s    czk8s  control-plane,worker  running  2     8192 MB  192.168.66.117  

@@ -1,0 +1,19 @@
+[
+  {
+    "configuration" : {
+      "creationDate" : "2026-10-26T00:01:21Z",
+      "driver" : "local",
+      "format" : "ext4",
+      "labels" : {
+
+      },
+      "name" : "ib-fx-vol",
+      "options" : {
+
+      },
+      "sizeInBytes" : 549755813888,
+      "source" : "/Users/fixture/Library/Application Support/com.apple.container/volumes/ib-fx-vol/volume.img"
+    },
+    "id" : "ib-fx-vol"
+  }
+]
