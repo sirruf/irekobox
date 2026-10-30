@@ -43,7 +43,13 @@ of its own. It comes as a command-line tool; Irekobox gives it a window.
 
 ## Install
 
-Download the latest release from
+With [Homebrew](https://brew.sh):
+
+```sh
+brew install sirruf/tap/irekobox
+```
+
+Or download the latest release from
 [Releases](https://github.com/sirruf/irekobox/releases). Builds are signed with
 a Developer ID, notarized by Apple, and update themselves.
 
