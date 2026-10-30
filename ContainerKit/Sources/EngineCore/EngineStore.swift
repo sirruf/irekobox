@@ -274,12 +274,6 @@ public actor EngineStore {
 
     private func fetchSystem(_ engine: any ContainerEngine, _ generation: Int) async {
         let status = await Self.capture { try await engine.systemStatus() }
-        let builder: BuilderStatus?
-        if case .success(let status?) = status, status.isRunning {
-            builder = try? await engine.builderStatus()
-        } else {
-            builder = nil
-        }
         guard generation == engineGeneration else { return }
 
         let was = snapshot.service
@@ -291,8 +285,6 @@ public actor EngineStore {
         case .failure(let error):
             snapshot.service = .failed(error)
         }
-        let builderChanged = snapshot.builder != builder
-        snapshot.builder = builder
 
         var events: [EngineEvent] = []
         let isRunning = snapshot.service.isRunning
@@ -301,7 +293,7 @@ public actor EngineStore {
         if snapshot.service == .stopped {
             clearServiceData()
         }
-        if snapshot.service != was || builderChanged { publish(events) }
+        if snapshot.service != was { publish(events) }
 
         // Fresh services: load what consumers are waiting for.
         if !was.isRunning && isRunning {
@@ -317,7 +309,6 @@ public actor EngineStore {
         snapshot.volumes = Loadable()
         snapshot.networks = Loadable()
         snapshot.diskUsage = Loadable()
-        snapshot.builder = nil
         for resource in EngineResource.allCases where resource != .system {
             lastFetch[resource] = nil
         }

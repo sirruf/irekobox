@@ -3,7 +3,7 @@ import ContainerKit
 
 /// A kind of engine state the store can fetch and poll.
 public enum EngineResource: String, Hashable, Sendable, CaseIterable, Codable {
-    /// Service status and the builder.
+    /// Service status.
     case system
     case containers
     case images
@@ -53,7 +53,6 @@ public enum ServiceState: Sendable, Equatable, Codable {
 /// Everything the store knows, at one point in time.
 public struct EngineSnapshot: Sendable, Codable {
     public internal(set) var service: ServiceState = .unknown
-    public internal(set) var builder: BuilderStatus?
     public internal(set) var containers = Loadable<[Container]>()
     public internal(set) var images = Loadable<[ContainerImage]>()
     public internal(set) var volumes = Loadable<[Volume]>()

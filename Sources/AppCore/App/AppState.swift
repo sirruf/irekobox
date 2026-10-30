@@ -94,7 +94,6 @@ public final class AppState {
     /// Latest known service status. `nil` unless services are running.
     var systemStatus: SystemStatus? { model.snapshot.service.status }
     var diskUsage: SystemDiskUsage? { model.snapshot.diskUsage.value }
-    var builder: BuilderStatus? { model.snapshot.builder }
     public var servicesRunning: Bool { model.snapshot.service.isRunning }
 
     /// Whether the `container` binary (Apple Containerization CLI) is installed
@@ -448,7 +447,7 @@ public final class AppState {
         if !resources.isEmpty { await model.refresh(resources) }
     }
 
-    /// Refresh the service gate, builder and disk usage now.
+    /// Refresh the service gate and disk usage now.
     public func refreshSystem() async {
         await model.refresh([.system])
         if servicesRunning { await model.refresh([.diskUsage]) }

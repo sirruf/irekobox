@@ -9,6 +9,7 @@ final class MockEngine: ContainerEngine, @unchecked Sendable {
     private var _containers: Result<[Container], EngineError> = .success([])
     private var _status: Result<SystemStatus?, EngineError> = .success(MockEngine.running)
     private var _listCalls = 0
+    private var _builderCalls = 0
     private var _gate: CheckedContinuation<Void, Never>?
     private var _holdNext = false
 
@@ -23,6 +24,7 @@ final class MockEngine: ContainerEngine, @unchecked Sendable {
         set { lock.withLock { _status = newValue } }
     }
     var listCalls: Int { lock.withLock { _listCalls } }
+    var builderCalls: Int { lock.withLock { _builderCalls } }
 
     /// The next `listContainers` call blocks until ``release()``.
     func holdNextList() { lock.withLock { _holdNext = true } }
@@ -54,7 +56,10 @@ final class MockEngine: ContainerEngine, @unchecked Sendable {
     }
 
     func systemStatus() async throws -> SystemStatus? { try status.get() }
-    func builderStatus() async throws -> BuilderStatus { BuilderStatus(isRunning: false, detail: nil) }
+    func builderStatus() async throws -> BuilderStatus {
+        lock.withLock { _builderCalls += 1 }
+        return BuilderStatus(isRunning: false, detail: nil)
+    }
     func diskUsage() async throws -> SystemDiskUsage { throw EngineError.timedOut }
     func listImages() async throws -> [ContainerImage] { [] }
     func listVolumes() async throws -> [Volume] { [] }
@@ -213,6 +218,13 @@ final class EngineStoreTests: XCTestCase {
         let recovered = await updates.next()
         XCTAssertNil(recovered?.snapshot.containers.error)
         XCTAssertEqual(recovered?.snapshot.containers.value?.map(\.id), ["a"])
+    }
+
+    func testSystemPollLeavesTheBuilderAlone() async throws {
+        let engine = MockEngine()
+        let store = await runningStore(engine)
+        await store.refresh(.system)
+        XCTAssertEqual(engine.builderCalls, 0, "builder status is a CLI spawn; nothing shows it")
     }
 
     func testConcurrentRefreshesCoalesce() async throws {
