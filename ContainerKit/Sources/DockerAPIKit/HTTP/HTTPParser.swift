@@ -32,7 +32,9 @@ public struct HTTPParser: Sendable {
     public var maxBodySize: Int
     /// Bodies larger than this are written to a temporary file.
     public var memoryLimit: Int
-    private var buffer = Data()
+    private var storage = Data()
+    private var offset = 0
+    private var buffer: Data { storage[offset...] }
     /// A request whose body is still arriving.
     private var pending: Pending?
 
@@ -59,14 +61,22 @@ public struct HTTPParser: Sendable {
     }
 
     public mutating func feed(_ data: Data) {
-        buffer.append(data)
+        // Compact only after a substantial prefix is consumed. Pipelined
+        // requests and chunks otherwise just advance the offset.
+        if offset >= 64 << 10, offset >= storage.count / 2 {
+            storage = Data(buffer)
+            offset = 0
+        }
+        storage.append(data)
     }
 
     /// Bytes received but not consumed by a request — handed to the raw
     /// stream after a hijack.
     public mutating func takeRemaining() -> Data {
-        defer { buffer = Data() }
-        return buffer
+        let remaining = Data(buffer)
+        storage = Data()
+        offset = 0
+        return remaining
     }
 
     /// The next complete request, or nil when more bytes are needed.
@@ -90,7 +100,7 @@ public struct HTTPParser: Sendable {
 
     private mutating func startRequest() throws -> Pending? {
         // Tolerate stray CRLFs between requests (RFC 9112 §2.2).
-        while buffer.starts(with: [0x0D, 0x0A]) { buffer.removeFirst(2) }
+        while buffer.starts(with: [0x0D, 0x0A]) { consume(count: 2) }
 
         guard let headEnd = buffer.firstRange(of: Self.crlfcrlf) else {
             if buffer.count > maxHeadSize { throw ParseError.headTooLarge }
@@ -212,9 +222,13 @@ public struct HTTPParser: Sendable {
         return request
     }
 
-    /// Drop consumed bytes, keeping indices zero-based.
+    /// Advance without copying the unread bytes after each chunk or request.
     private mutating func consume(count: Int) {
-        buffer = Data(buffer.dropFirst(count))
+        offset += count
+        if offset == storage.count {
+            storage.removeAll(keepingCapacity: true)
+            offset = 0
+        }
     }
 
     private mutating func consume(upTo index: Data.Index) {

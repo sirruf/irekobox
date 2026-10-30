@@ -88,6 +88,8 @@ final class SocketConnection: HijackedConnection, @unchecked Sendable {
     let reader: ByteReader
     private let lock = NSLock()
     private var closed = false
+    /// Used only on this connection's serial read queue.
+    private var readBuffer = [UInt8](repeating: 0, count: 64 << 10)
 
     init(fd: Int32) {
         self.fd = fd
@@ -104,11 +106,11 @@ final class SocketConnection: HijackedConnection, @unchecked Sendable {
         let source = DispatchSource.makeReadSource(fileDescriptor: fd, queue: DispatchQueue(label: "docker-api.read"))
         readSource = source
         readDone.enter()
-        source.setEventHandler { [weak source] in
-            var buffer = [UInt8](repeating: 0, count: 64 << 10)
-            let count = read(fd, &buffer, buffer.count)
+        source.setEventHandler { [weak self, weak source] in
+            guard let self else { return }
+            let count = readBuffer.withUnsafeMutableBytes { read(fd, $0.baseAddress, $0.count) }
             if count > 0 {
-                continuation.yield(Data(buffer[0..<count]))
+                continuation.yield(Data(readBuffer[0..<count]))
             } else if count == 0 || (errno != EAGAIN && errno != EINTR) {
                 // EOF (or the client half-closed): no more input, but we may
                 // still be writing to it.

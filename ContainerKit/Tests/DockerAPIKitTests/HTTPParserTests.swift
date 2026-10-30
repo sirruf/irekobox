@@ -107,6 +107,36 @@ final class HTTPParserTests: XCTestCase {
         XCTAssertEqual(parser.takeRemaining(), Data("raw stdin bytes".utf8), "bytes after a hijack request")
     }
 
+    func testCompactionPreservesPipelinedRequestsAndHijackBytes() throws {
+        var parser = HTTPParser(memoryLimit: 32)
+        let payload = Data(repeating: 0x61, count: 70_000)
+        parser.feed(Data("POST /upload HTTP/1.1\r\nContent-Length: 70000\r\n\r\n".utf8) + payload
+                    + Data("\r\nGET /next HTTP/1.1\r\nX-Test:".utf8))
+        let upload = try XCTUnwrap(parser.next())
+        let file = try XCTUnwrap(upload.bodyFile)
+        defer { HTTPRequest.removeBodyFile(file) }
+        XCTAssertEqual(try Data(contentsOf: file), payload)
+        XCTAssertNil(try parser.next())
+        parser.feed(Data(" yes\r\n\r\nraw".utf8))
+        let next = try XCTUnwrap(parser.next())
+        XCTAssertEqual(next.path, "/next")
+        XCTAssertEqual(next.header("X-Test"), "yes")
+        XCTAssertEqual(parser.takeRemaining(), Data("raw".utf8))
+        XCTAssertTrue(parser.takeRemaining().isEmpty)
+        parser.feed(Data("GET /reused HTTP/1.1\r\n\r\n".utf8))
+        XCTAssertEqual(try parser.next()?.path, "/reused")
+    }
+
+    func testManyPipelinedChunksInOneFeed() throws {
+        var parser = HTTPParser(maxHeadSize: 128)
+        let head = "POST /chunks HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n"
+        parser.feed(Data((head + String(repeating: "1\r\na\r\n", count: 20_000)
+                          + "0\r\nTrailer: yes\r\n\r\nGET /next HTTP/1.1\r\n\r\n").utf8))
+        XCTAssertEqual(try parser.next()?.body, Data(repeating: 0x61, count: 20_000))
+        XCTAssertEqual(try parser.next()?.path, "/next")
+        XCTAssertNil(try parser.next())
+    }
+
     func testConnectionPersistence() throws {
         var parser = HTTPParser()
         let requests = try parse(["GET / HTTP/1.0\r\n\r\n", "GET / HTTP/1.1\r\nConnection: close\r\n\r\n",
