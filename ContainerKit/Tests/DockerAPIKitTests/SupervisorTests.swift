@@ -31,7 +31,11 @@ private final class SupervisedEngine: DockerBackend, @unchecked Sendable {
     func systemStatus() async throws -> SystemStatus? {
         try JSONDecoder().decode(SystemStatus.self, from: Data(#"{"status":"\#(engineRunning ? "running" : "unregistered")"}"#.utf8))
     }
-    func listContainers(all: Bool) async throws -> [Container] { lock.withLock { Array(containers.values) } }
+    // Over XPC the list answers only while the services run.
+    func listContainers(all: Bool) async throws -> [Container] {
+        guard engineRunning else { throw EngineError.servicesNotRunning }
+        return lock.withLock { Array(containers.values) }
+    }
     func startContainer(_ id: String) async throws {
         lock.withLock { started.append(id) }
         try setRunning(id, true)

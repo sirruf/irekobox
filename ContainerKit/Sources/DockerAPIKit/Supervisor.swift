@@ -199,7 +199,16 @@ public actor Supervisor {
     /// On an engine start: `always` comes back even after a hand stop (which
     /// is then forgotten), `unless-stopped` only if not stopped by hand.
     func watchEngine() async {
-        let running = (try? await backend.systemStatus())??.isRunning == true
+        // A container list over XPC answers only while the services run, and
+        // costs no process; `system status` (a CLI process) only confirms when
+        // it doesn't answer, so a passing XPC hiccup can't fake an engine stop
+        // (and the restart-policy pass that follows an engine start).
+        let running: Bool
+        if (try? await backend.listContainers(all: false)) != nil {
+            running = true
+        } else {
+            running = (try? await backend.systemStatus())??.isRunning == true
+        }
         guard running != state.engineRunning else { return }
         state.engineRunning = running
         save()

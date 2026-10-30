@@ -152,6 +152,16 @@ public actor EventHub {
 
     // MARK: - Diffs
 
+    /// Listed once for every exit in a round, not once per exit.
+    private var roundContainers: [Container]?
+
+    private func containersThisRound() async -> [Container] {
+        if let roundContainers { return roundContainers }
+        let listed = (try? await backend.listContainers(all: true)) ?? []
+        roundContainers = listed
+        return listed
+    }
+
     func containerEvents(_ old: [String: ContainerState], _ new: [String: ContainerState], _ now: Date) async -> [DockerEvent] {
         func event(_ action: String, _ state: ContainerState, _ extra: [String: String] = [:]) -> DockerEvent {
             var attributes = state.labels
@@ -160,9 +170,10 @@ public actor EventHub {
             attributes.merge(extra) { $1 }
             return DockerEvent(type: "container", action: action, actorID: state.id, attributes: attributes, time: now)
         }
+        roundContainers = nil
         func die(_ state: ContainerState) async -> DockerEvent {
             var code = "0"
-            if let exits, let container = try? await backend.listContainers(all: true).first(where: { $0.id == state.name }),
+            if let exits, let container = await containersThisRound().first(where: { $0.id == state.name }),
                let exit = await exits.exit(for: container) {
                 code = String(exit.code)
             }
