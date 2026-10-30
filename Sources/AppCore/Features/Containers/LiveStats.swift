@@ -45,15 +45,16 @@ final class LiveStats {
             for await result in group { collected.append(result) }
             return collected
         }
+        guard !Task.isCancelled else { return }
         let now = ContinuousClock.now
         let wanted = Set(ids)
         // Forget containers that are gone or no longer running.
-        series = series.filter { wanted.contains($0.key) }
-        previous = previous.filter { wanted.contains($0.key) }
+        for id in series.keys where !wanted.contains(id) { series[id] = nil }
+        for id in previous.keys where !wanted.contains(id) { previous[id] = nil }
 
         for (id, stats) in results {
             guard let stats else {
-                series[id] = nil
+                if series[id] != nil { series[id] = nil }
                 previous[id] = nil
                 continue
             }
@@ -70,7 +71,7 @@ final class LiveStats {
             }
             entry.memoryUsage = stats.memoryUsageBytes
             entry.memoryLimit = stats.memoryLimitBytes
-            series[id] = entry
+            if series[id] != entry { series[id] = entry }
             previous[id] = (stats, now)
         }
     }

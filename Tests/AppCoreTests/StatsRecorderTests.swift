@@ -23,6 +23,26 @@ final class StatsRecorderTests: XCTestCase {
         XCTAssertEqual(averaged.first?.time, base.addingTimeInterval(150))
     }
 
+    func testPointsReuseBucketsUntilSamplesOrCutoffChange() {
+        let recorder = StatsRecorder()
+        let now = Date(timeIntervalSinceReferenceDate: 9000)
+        for index in 0..<4 {
+            recorder.record([("web", stats(cpu: Int64(index) * 1_000_000))], existing: ["web"],
+                            at: now.addingTimeInterval(Double(index - 3) * 300))
+        }
+        let first = recorder.points("web", range: 7200, now: now)
+        let second = recorder.points("web", range: 7200, now: now.addingTimeInterval(1))
+        first.withUnsafeBufferPointer { a in
+            second.withUnsafeBufferPointer { b in
+                XCTAssertEqual(a.baseAddress, b.baseAddress, "unchanged chart data shares cached storage")
+            }
+        }
+        XCTAssertEqual(recorder.points("web", range: 7200, now: now.addingTimeInterval(6601)).count, 2)
+        XCTAssertEqual(recorder.points("web", range: 7200, now: now).count, 3, "an earlier cutoff must invalidate the cache too")
+        recorder.record([("web", stats(cpu: 8_000_000))], existing: ["web"], at: now.addingTimeInterval(300))
+        XCTAssertEqual(recorder.points("web", range: 7200, now: now.addingTimeInterval(300)).count, 4)
+    }
+
     func testRecordsKeepsRangeAndForgetsRemoved() {
         let recorder = StatsRecorder()
         let now = Date()

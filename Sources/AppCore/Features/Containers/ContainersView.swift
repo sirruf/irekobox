@@ -47,16 +47,20 @@ struct ContainersView: View {
             path = [request.id]
             app.openContainerPage = nil
         }
-        .task {
-            let stats = self.stats
-            let engine = app.engine
-            await stats.run(engine: engine) { [app] in
-                app.model.containers.filter { $0.state.isRunning }.map(\.id)
-            }
+        .task(id: sampledIDs) {
+            let ids = sampledIDs
+            await stats.run(engine: app.engine) { ids }
         }
     }
 
     // MARK: - Data
+
+    /// Match the displayed list, including search, state and system filters.
+    private var sampledIDs: [String] {
+        guard path.isEmpty else { return [] }
+        return ContainerList.filter(model?.containers ?? [], search: search, state: stateFilter, includeSystem: showSystem)
+            .filter { $0.state.isRunning }.map(\.id).sorted()
+    }
 
     private func rows(_ model: ContainersViewModel) -> [ContainerRow] {
         ContainerList.filter(model.containers, search: search, state: stateFilter, includeSystem: showSystem)

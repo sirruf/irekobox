@@ -24,7 +24,7 @@ struct StatsHistory {
     let span: TimeInterval
     private(set) var points: [Point] = []
     private(set) var latest: ContainerStats?
-    private var latestTime: Date?
+    private(set) var latestTime: Date?
 
     init(span: TimeInterval = StatsHistory.window) {
         self.span = span

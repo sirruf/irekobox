@@ -1,4 +1,5 @@
 import XCTest
+import Observation
 import ContainerKit
 @testable import AppCore
 
@@ -10,6 +11,29 @@ final class LiveStatsTests: XCTestCase {
         private let lock = NSLock()
         private var usec: Int64 = 1_000_000
         func next() -> Int64 { lock.withLock { usec += 500_000; return usec } }
+    }
+
+    func testUnchangedFullSeriesDoesNotNotifyObservers() async {
+        let mock = MockCLI()
+        mock.responder = { _ in
+            Data("[{\"id\":\"web\",\"cpuUsageUsec\":0,\"memoryUsageBytes\":100,\"memoryLimitBytes\":1000,\"networkRxBytes\":0,\"networkTxBytes\":0,\"blockReadBytes\":0,\"blockWriteBytes\":0,\"numProcesses\":1}]".utf8)
+        }
+        let engine = CLIEngine(cli: mock, stream: CLIStream())
+        let stats = LiveStats()
+        for _ in 0...LiveStats.historyLength { await stats.sample(engine: engine, ids: ["web"]) }
+        let changed = ChangeFlag()
+        withObservationTracking { _ = stats.series } onChange: { changed.mark() }
+        await stats.sample(engine: engine, ids: ["web"])
+        XCTAssertFalse(changed.value)
+        await stats.sample(engine: engine, ids: [])
+        XCTAssertTrue(changed.value, "removal still notifies observers")
+    }
+
+    private final class ChangeFlag: @unchecked Sendable {
+        private let lock = NSLock()
+        private var changed = false
+        var value: Bool { lock.withLock { changed } }
+        func mark() { lock.withLock { changed = true } }
     }
 
     func testSeriesAccumulatesAndForgetsStoppedContainers() async throws {
