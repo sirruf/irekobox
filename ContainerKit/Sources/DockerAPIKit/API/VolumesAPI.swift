@@ -195,24 +195,31 @@ public actor FreshVolumes {
     func take(_ name: String) -> Bool { names.remove(name) != nil }
 
     /// Copy `path` of `image` into each volume, as root, keeping owners and
-    /// modes. Best effort: an image without a shell, or without that folder,
-    /// leaves the volume as it is.
+    /// modes, after removing the empty `lost+found` a new ext4 volume has
+    /// (postgres 18 refuses a data folder that isn't empty). Best effort: an
+    /// image without a shell leaves the volume as it is.
     static func copyUp(_ mounts: [(name: String, path: String)], image: String, container: String,
                        backend: DockerBackend) async {
         for (index, mount) in mounts.enumerated() {
             let helper = "\(container)-copyup-\(index)"
             let script = """
+            rmdir /.irekobox-copyup/lost+found 2>/dev/null
             s=\(shellQuote(mount.path)); [ -d "$s" ] || exit 0
             cp -a "$s"/. /.irekobox-copyup/ && chown "$(stat -c %u:%g "$s")" /.irekobox-copyup \\
               && chmod "$(stat -c %a "$s")" /.irekobox-copyup
             """
             do {
-                try await backend.createContainer(["--name", helper, "--entrypoint", "/bin/sh", "-u", "0",
+                try await backend.createContainer(["--name", helper, "--rm", "--entrypoint", "/bin/sh", "-u", "0",
                                                    "-v", "\(mount.name):/.irekobox-copyup", image, "-c", script])
                 try await backend.startContainer(helper)
                 _ = try await backend.waitContainer(helper)
             } catch {}
-            try? await backend.deleteContainer(helper, force: true)
+            // `--rm` usually removes it; a stop that settles late can keep it, so retry.
+            for attempt in 0..<5 {
+                guard (try? await backend.listContainers(all: true))?.contains(where: { $0.id == helper }) == true else { break }
+                try? await backend.deleteContainer(helper, force: true)
+                if attempt < 4 { try? await Task.sleep(for: .milliseconds(400)) }
+            }
         }
     }
 
