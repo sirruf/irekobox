@@ -1,0 +1,32 @@
+name: Bug report
+description: Something in Irekobox doesn't work as it should.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open …
+        2. Click …
+  - type: textarea
+    id: system
+    attributes:
+      label: System info
+      description: In Irekobox, **About Irekobox › Copy System Info**, then paste it here.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: compose
+    attributes:
+      label: Compose file or docker command
+      description: If it's about the Docker API or a Compose project, the smallest file or command that shows it.
+      render: yaml

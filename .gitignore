@@ -37,3 +37,6 @@ Irekobox.xcodeproj/
 
 # Release output (scripts/release.sh)
 /build/
+
+# Old local build under the previous name
+/Containerizator.app/
