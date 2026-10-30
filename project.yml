@@ -90,8 +90,8 @@ targets:
         PRODUCT_NAME: Irekobox
         PRODUCT_BUNDLE_IDENTIFIER: com.irekobox.app
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        MARKETING_VERSION: "0.1.1"
-        CURRENT_PROJECT_VERSION: "2"
+        MARKETING_VERSION: "0.1.2"
+        CURRENT_PROJECT_VERSION: "3"
         SWIFT_VERSION: "6.0"
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.developer-tools"
@@ -122,8 +122,8 @@ targets:
         PRODUCT_NAME: IrekoboxAgent
         PRODUCT_BUNDLE_IDENTIFIER: com.irekobox.agent
         # Reported by the Docker API (`docker version`); keep in step with the app.
-        MARKETING_VERSION: "0.1.1"
-        CURRENT_PROJECT_VERSION: "2"
+        MARKETING_VERSION: "0.1.2"
+        CURRENT_PROJECT_VERSION: "3"
         SWIFT_VERSION: "6.0"
         GENERATE_INFOPLIST_FILE: YES
         CREATE_INFOPLIST_SECTION_IN_BINARY: YES
@@ -159,8 +159,8 @@ targets:
       base:
         PRODUCT_NAME: IrekoboxWidgets
         PRODUCT_BUNDLE_IDENTIFIER: com.irekobox.app.widgets
-        MARKETING_VERSION: "0.1.1"
-        CURRENT_PROJECT_VERSION: "2"
+        MARKETING_VERSION: "0.1.2"
+        CURRENT_PROJECT_VERSION: "3"
         SWIFT_VERSION: "6.0"
         GENERATE_INFOPLIST_FILE: YES
         ENABLE_HARDENED_RUNTIME: YES
@@ -183,8 +183,8 @@ targets:
       base:
         PRODUCT_NAME: IrekoboxMCP
         PRODUCT_BUNDLE_IDENTIFIER: com.irekobox.mcp
-        MARKETING_VERSION: "0.1.1"
-        CURRENT_PROJECT_VERSION: "2"
+        MARKETING_VERSION: "0.1.2"
+        CURRENT_PROJECT_VERSION: "3"
         SWIFT_VERSION: "6.0"
         GENERATE_INFOPLIST_FILE: YES
         CREATE_INFOPLIST_SECTION_IN_BINARY: YES
@@ -208,8 +208,8 @@ targets:
       base:
         PRODUCT_NAME: IrekoboxSocketLink
         PRODUCT_BUNDLE_IDENTIFIER: com.irekobox.socketlink
-        MARKETING_VERSION: "0.1.1"
-        CURRENT_PROJECT_VERSION: "2"
+        MARKETING_VERSION: "0.1.2"
+        CURRENT_PROJECT_VERSION: "3"
         SWIFT_VERSION: "6.0"
         GENERATE_INFOPLIST_FILE: YES
         CREATE_INFOPLIST_SECTION_IN_BINARY: YES
