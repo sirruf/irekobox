@@ -214,11 +214,20 @@ public actor FreshVolumes {
                 try await backend.startContainer(helper)
                 _ = try await backend.waitContainer(helper)
             } catch {}
-            // `--rm` usually removes it; a stop that settles late can keep it, so retry.
-            for attempt in 0..<5 {
-                guard (try? await backend.listContainers(all: true))?.contains(where: { $0.id == helper }) == true else { break }
-                try? await backend.deleteContainer(helper, force: true)
-                if attempt < 4 { try? await Task.sleep(for: .milliseconds(400)) }
+            // `--rm` removes it a moment after it exits, and the volume is free
+            // only then. A stop that settles late can keep it: remove it
+            // ourselves if it is still there after a while.
+            let clock = ContinuousClock()
+            let exited = clock.now
+            var forced = false
+            while (try? await backend.listContainers(all: true))?.contains(where: { $0.id == helper }) == true {
+                let waited = clock.now - exited
+                if waited > .seconds(3) { break }
+                if !forced, waited > .milliseconds(300) {
+                    try? await backend.deleteContainer(helper, force: true)
+                    forced = true
+                }
+                try? await Task.sleep(for: .milliseconds(25))
             }
         }
     }

@@ -83,6 +83,9 @@ public actor HealthMonitor {
     private var runner: Runner
     private var tracked: [String: Tracked] = [:]          // name|started → state
     private var loop: Task<Void, Never>?
+    /// The loop's current sleep; a finished probe cuts it short, so the next
+    /// one is scheduled from its real end.
+    private var nap: Task<Void, Never>?
     private var onChange: (@Sendable (Container, Health, Status?) async -> Void)?
     private let log = Logger(subsystem: "com.irekobox", category: "health")
 
@@ -96,19 +99,39 @@ public actor HealthMonitor {
         onChange = handler
     }
 
+    /// Look for containers every `tick`, and wake for each probe when it is
+    /// due rather than on the next tick: `compose up --wait` waits on the
+    /// first probe, which Docker runs one interval after the start.
     public func start(tick: Duration = .seconds(1)) {
         guard loop == nil else { return }
         loop = Task { [weak self] in
             while !Task.isCancelled {
-                await self?.round(now: Date())
-                try? await Task.sleep(for: tick)
+                guard let wait = await self?.roundThenWait(now: Date(), tick: tick) else { return }
+                await self?.sleep(for: wait)
             }
         }
+    }
+
+    /// A round, then how long to sleep: a tick, or less when a probe falls
+    /// due sooner.
+    func roundThenWait(now: Date, tick: Duration) async -> Duration {
+        await round(now: now)
+        guard let due = tracked.values.filter({ !$0.probing }).map(\.nextProbe).min() else { return tick }
+        let seconds = max(0.02, due.timeIntervalSince(Date()))
+        return min(tick, .milliseconds(Int(seconds * 1000)))
+    }
+
+    private func sleep(for wait: Duration) async {
+        let task = Task<Void, Never> { _ = try? await Task.sleep(for: wait) }
+        nap = task
+        await task.value
+        if nap == task { nap = nil }
     }
 
     public func stop() {
         loop?.cancel()
         loop = nil
+        nap?.cancel()
     }
 
     /// The current health of this run of the container, if it has a check.
@@ -172,6 +195,7 @@ public actor HealthMonitor {
         state.nextProbe = probe.end.addingTimeInterval(wait)
         state.probing = false
         tracked[key] = state
+        nap?.cancel()
         if state.health.status != before {
             log.info("\(container.id, privacy: .public): \(state.health.status.rawValue, privacy: .public)")
             await onChange?(container, state.health, before)

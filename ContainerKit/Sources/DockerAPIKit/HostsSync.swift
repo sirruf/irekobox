@@ -61,25 +61,46 @@ public actor HostsSync {
         let running = containers.filter { $0.state.isRunning }
         let files = Self.files(for: running.filter { !$0.isSystem }) + Self.machineFiles(for: running)
         var live: Set<String> = []
+        var changed: [(key: String, name: String, content: String)] = []
         for (container, content) in files {
             let key = Self.key(container)
             live.insert(key)
             guard written[key] != content else { continue }
             if let last = failed[key], Date().timeIntervalSince(last) < 30 { continue }
-            do {
-                try await write(content, into: container.id)
+            changed.append((key, container.id, content))
+        }
+        // All at once: a start through the API waits for this, and in a
+        // compose project each start changes every neighbour's file.
+        let backend = backend
+        let outcomes = await withTaskGroup(of: (String, String, String, Error?).self) { group in
+            for file in changed {
+                group.addTask {
+                    do {
+                        try await Self.write(file.content, into: file.name, backend: backend)
+                        return (file.key, file.name, file.content, nil)
+                    } catch {
+                        return (file.key, file.name, file.content, error)
+                    }
+                }
+            }
+            var all: [(String, String, String, Error?)] = []
+            for await outcome in group { all.append(outcome) }
+            return all
+        }
+        for (key, name, content, error) in outcomes {
+            if let error {
+                failed[key] = Date()
+                log.error("/etc/hosts of \(name, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            } else {
                 written[key] = content
                 failed[key] = nil
-            } catch {
-                failed[key] = Date()
-                log.error("/etc/hosts of \(container.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
             }
         }
         written = written.filter { live.contains($0.key) }
         failed = failed.filter { live.contains($0.key) }
     }
 
-    private func write(_ content: String, into name: String) async throws {
+    private static func write(_ content: String, into name: String, backend: DockerBackend) async throws {
         let folder = FileManager.default.temporaryDirectory.appending(path: "irekobox-hosts-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }

@@ -51,9 +51,21 @@ else
 fi
 export DOCKER_HOST="${HOST:-unix://$SOCKET}"
 export DOCKER_CLI_HINTS=false COMPOSE_MENU=false
-trap '[ -n "$DEV_PID" ] && kill "$DEV_PID" 2>/dev/null' EXIT
 
 docker version >/dev/null 2>&1 || { echo "no Docker API at $SOCKET" >&2; exit 2; }
+
+# `--build` boots buildx's BuildKit container (a VM of its own, left running):
+# remove it afterwards if this run made it.
+HAD_BUILDKIT=1
+docker inspect buildx_buildkit_default >/dev/null 2>&1 || HAD_BUILDKIT=0
+cleanup() {
+    if [ "$HAD_BUILDKIT" = 0 ]; then
+        docker rm -f buildx_buildkit_default >/dev/null 2>&1
+        docker volume rm buildx_buildkit_default_state >/dev/null 2>&1
+    fi
+    [ -n "$DEV_PID" ] && kill "$DEV_PID" 2>/dev/null
+}
+trap cleanup EXIT
 
 # Published host ports of a project, one per line.
 ports() {

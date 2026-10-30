@@ -29,6 +29,12 @@ private final class FakeEngine: DockerBackend, @unchecked Sendable {
         throw EngineError.serviceError(code: "invalidState", message: "no runtime client exists: container is stopped")
     }
     var images: [ContainerImage] = []
+    var volumes: [String] = []
+    func listVolumes() async throws -> [Volume] {
+        try volumes.map { name in
+            try JSONDecoder().decode(Volume.self, from: Data(#"{"id":"\#(name)","configuration":{"name":"\#(name)","driver":"local"}}"#.utf8))
+        }
+    }
     func createContainer(_ arguments: [String]) async throws { record("create \(arguments.joined(separator: " "))") }
     func createVolume(_ name: String) async throws { record("volume create \(name)") }
     func deleteVolume(_ name: String) async throws { record("volume delete \(name)") }
@@ -350,6 +356,18 @@ final class ContainersAPITests: XCTestCase {
         let create = try XCTUnwrap(engine.calls.first { $0.hasPrefix("create --name new1 ") })
         XCTAssertTrue(create.contains(" -v new1-anon-") && create.contains(":/data "), create)
         XCTAssertTrue(create.contains(" --network default ") && create.hasSuffix(" alpine"), create)
+    }
+
+    func testANamedVolumeTheCreateMakesIsFilledFromTheImage() async throws {
+        let (router, engine) = try setUp()
+        engine.images = [try image("docker.io/library/postgres:17-alpine")]
+        engine.volumes = ["kept"]
+        let body = #"{"Image":"postgres:17-alpine","HostConfig":{"Binds":["pgdata:/var/lib/postgresql/data","kept:/kept"]}}"#
+        _ = await router.handle(HTTPRequest(method: "POST", target: "/containers/create?name=new2", body: Data(body.utf8)))
+        let helpers = engine.calls.filter { $0.hasPrefix("create --name new2-copyup-") }
+        XCTAssertEqual(helpers.count, 1, "only the volume that didn't exist: \(engine.calls)")
+        XCTAssertTrue(helpers[0].contains(" -v pgdata:/.irekobox-copyup "), helpers[0])
+        XCTAssertTrue(helpers[0].contains("/var/lib/postgresql/data"), helpers[0])
     }
 
     func testRemoveWithVolumesDeletesAnonymousOnes() async throws {

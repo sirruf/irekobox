@@ -208,6 +208,17 @@ public enum ContainersAPI {
         let mapping = try CreateMapping.arguments(config, name: name, platform: platform,
                                                   dnsName: await serviceDNSName(config, backend),
                                                   freePort: FreePort.pick)
+        // Named volumes that don't exist yet: the runtime makes them with the
+        // container, and Docker fills those from the image too (an empty
+        // `pgdata` with lost+found would stop postgres's initdb).
+        var missing: Set<String> = []
+        let named = mapping.volumeMounts.map(\.name).filter { name in
+            !mapping.anonymousVolumes.contains { $0.name == name }
+        }
+        if fillVolumes, !named.isEmpty, let volumes = try? await backend.listVolumes() {
+            let present = Set(volumes.map(\.configuration.name))
+            missing = Set(named.filter { !present.contains($0) })
+        }
         var made: [String] = []
         do {
             for volume in mapping.anonymousVolumes {
@@ -222,6 +233,7 @@ public enum ContainersAPI {
         if fillVolumes {
             var fresh: [(name: String, path: String)] = []
             for mount in mapping.volumeMounts where await FreshVolumes.shared.take(mount.name)
+                || missing.contains(mount.name)
                 || mapping.anonymousVolumes.contains(where: { $0.name == mount.name }) {
                 fresh.append(mount)
             }
