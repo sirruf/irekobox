@@ -49,14 +49,19 @@ fi
 
 echo "==> Signing (inside out)"
 sign() { codesign --force --options runtime --timestamp --sign "$IDENTITY" "$@"; }
-# Same identifiers as their bundle IDs in project.yml.
+# Same identifiers as their bundle IDs in project.yml. Entitlements are
+# given explicitly: re-signing drops the ones the archive was built with.
 sign --identifier com.irekobox.agent "$APP/Contents/MacOS/IrekoboxAgent"
+sign --identifier com.irekobox.mcp "$APP/Contents/MacOS/IrekoboxMCP"
 sign --identifier com.irekobox.socketlink "$APP/Contents/MacOS/IrekoboxSocketLink"
 if [ -d "$APP/Contents/Frameworks" ]; then
     find "$APP/Contents/Frameworks" -maxdepth 1 \( -name "*.framework" -o -name "*.dylib" \) -print0 \
         | while IFS= read -r -d '' item; do sign "$item"; done
 fi
-sign "$APP"
+for appex in "$APP"/Contents/PlugIns/*.appex; do
+    [ -e "$appex" ] && sign --entitlements "$ROOT/Resources/Widgets.entitlements" "$appex"
+done
+sign --entitlements "$ROOT/Resources/Irekobox.entitlements" "$APP"
 codesign --verify --deep --strict "$APP"
 echo "    signature ok"
 
@@ -80,6 +85,11 @@ DMG="$OUT/Irekobox-$VERSION.dmg"
 [ -e "$DMG" ] && mv "$DMG" "$OUT/.old-$(date +%s)-$(basename "$DMG")"
 hdiutil create -quiet -volname "Irekobox" -srcfolder "$APP" -ov -format UDZO "$DMG"
 sign "$DMG"
+if [ "$NOTARIZE" = 1 ] && xcrun notarytool history --keychain-profile "$PROFILE" >/dev/null 2>&1; then
+    echo "==> Notarizing the disk image"
+    xcrun notarytool submit "$DMG" --keychain-profile "$PROFILE" --wait
+    xcrun stapler staple "$DMG"
+fi
 
 SHA=$(shasum -a 256 "$ZIP" | cut -d' ' -f1)
 BASE="${DOWNLOAD_BASE_URL:-${APPCAST_URL%/*}}"
