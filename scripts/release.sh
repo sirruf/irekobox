@@ -32,6 +32,14 @@ fi
 NOTARIZE=1
 [ "${1:-}" = "--skip-notarize" ] && NOTARIZE=0
 
+# The archive is built from the working tree: a release must be exactly a
+# commit, not whatever else is lying around in it (ALLOW_DIRTY=1 overrides).
+if [ -z "${ALLOW_DIRTY:-}" ] && [ -n "$(git -C "$ROOT" status --porcelain --untracked-files=no)" ]; then
+    echo "Uncommitted changes in $ROOT; commit or set them aside first:" >&2
+    git -C "$ROOT" status --short --untracked-files=no >&2
+    exit 1
+fi
+
 VERSION=$(grep -m1 'MARKETING_VERSION' "$ROOT/project.yml" | sed -E 's/.*"(.*)".*/\1/')
 BUILD=$(grep -m1 'CURRENT_PROJECT_VERSION' "$ROOT/project.yml" | sed -E 's/.*"(.*)".*/\1/')
 IDENTITY=$(security find-identity -v -p codesigning | grep "Developer ID Application" | grep "$TEAM" | head -1 | sed -E 's/.*"(.*)"/\1/')
