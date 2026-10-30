@@ -27,13 +27,17 @@ public enum LogsStatsAPI {
         return header + payload
     }
 
+    nonisolated(unsafe) private static let timestampFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }()
+
     static func timestamp(_ date: Date) -> String {
         // RFC 3339 with nanoseconds, as Docker prints them.
         let seconds = date.timeIntervalSince1970
         let whole = Date(timeIntervalSince1970: floor(seconds))
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        let base = formatter.string(from: whole).dropLast()   // drop "Z"
+        let base = timestampFormatter.string(from: whole).dropLast()   // drop "Z"
         let nanos = Int((seconds - floor(seconds)) * 1_000_000_000)
         return "\(base).\(String(format: "%09d", nanos))Z"
     }
@@ -82,21 +86,39 @@ public enum LogsStatsAPI {
                 return true
             }
             do {
+                var historyCount = 0
                 var history: [String] = []
-                for try await line in backend.containerLogs(name, follow: false) { history.append(line) }
-                let shown = tail.map { Array(history.suffix($0)) } ?? history
-                for line in shown where !emit(line) {
-                    continuation.finish()
-                    return
+                var oldest = 0
+                for try await line in backend.containerLogs(name, follow: false) {
+                    try Task.checkCancellation()
+                    historyCount += 1
+                    if let tail {
+                        if tail == 0 { continue }
+                        if history.count < tail {
+                            history.append(line)
+                        } else {
+                            history[oldest] = line
+                            oldest = (oldest + 1) % tail
+                        }
+                    } else if !emit(line) {
+                        continuation.finish()
+                        return
+                    }
+                }
+                for index in history.indices {
+                    if !emit(history[(oldest + index) % history.count]) {
+                        continuation.finish()
+                        return
+                    }
                 }
                 guard follow, item.state == .running else {
                     continuation.finish()
                     return
                 }
+                let skipCount = historyCount
                 try await withThrowingTaskGroup(of: Void.self) { group in
-                    let historyCount = history.count
                     group.addTask {
-                        var skip = historyCount
+                        var skip = skipCount
                         for try await line in backend.containerLogs(name, follow: true) {
                             if skip > 0 { skip -= 1; continue }
                             if !emit(line) { return }

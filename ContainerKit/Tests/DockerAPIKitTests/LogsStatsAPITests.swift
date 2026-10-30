@@ -6,6 +6,10 @@ private final class LogEngine: DockerBackend, @unchecked Sendable {
     var containers: [Container]
     var lines: [String] = []
     var stats: [ContainerStats] = []
+    var logStream: (@Sendable (Bool) -> AsyncThrowingStream<String, Error>)?
+    var listed: (@Sendable (Int) -> [Container])?
+    private var lists = 0
+    var listCount: Int { lock.withLock { lists } }
     private var statsIndex = 0
     private let lock = NSLock()
 
@@ -13,7 +17,10 @@ private final class LogEngine: DockerBackend, @unchecked Sendable {
 
     func systemStatus() async throws -> SystemStatus? { nil }
     func systemProperties() async throws -> String { "" }
-    func listContainers(all: Bool) async throws -> [Container] { containers }
+    func listContainers(all: Bool) async throws -> [Container] {
+        let count = lock.withLock { lists += 1; return lists }
+        return listed?(count) ?? containers
+    }
     func listImages() async throws -> [ContainerImage] { [] }
     func startContainer(_ id: String) async throws {}
     func stopContainer(_ id: String, timeout: Int32?, signal: String?) async throws {}
@@ -25,6 +32,7 @@ private final class LogEngine: DockerBackend, @unchecked Sendable {
     func deleteVolume(_ name: String) async throws {}
     func pullImage(_ reference: String, platform: String?) -> AsyncThrowingStream<String, Error> { AsyncThrowingStream { $0.finish() } }
     func containerLogs(_ id: String, follow: Bool) -> AsyncThrowingStream<String, Error> {
+        if let logStream { return logStream(follow) }
         let lines = self.lines
         return AsyncThrowingStream { continuation in
             for line in lines { continuation.yield(line) }
@@ -105,6 +113,110 @@ final class LogsStatsAPITests: XCTestCase {
         let parsed = frames(data)
         XCTAssertEqual(parsed.map(\.0), [1, 1])
         XCTAssertEqual(parsed.map(\.1), ["two\n", "three\n"])
+    }
+
+    func testLogsWithoutTailEmitBeforeHistoryEnds() async throws {
+        let engine = LogEngine(containers: try containers())
+        let (history, continuation) = AsyncThrowingStream<String, Error>.makeStream()
+        engine.logStream = { _ in history }
+        let response = await router(engine).handle(HTTPRequest(method: "GET", target: "/containers/ib-fx-redis/logs?stdout=1"))
+        let received = expectation(description: "first history line")
+        let task = Task {
+            guard case .stream(let stream) = response.body else { XCTFail("not a stream"); return }
+            for try await chunk in stream {
+                XCTAssertEqual(chunk, LogsStatsAPI.frame(Data("early\n".utf8)))
+                received.fulfill()
+            }
+        }
+        continuation.yield("early")
+        await fulfillment(of: [received], timeout: 1)
+        continuation.finish()
+        try await task.value
+    }
+
+    func testTailWrapsAndFollowSkipsAllHistory() async throws {
+        for tail in [nil, 0, 2, 10] as [Int?] {
+            let engine = LogEngine(containers: try containers())
+            engine.logStream = { follow in
+                AsyncThrowingStream { continuation in
+                    for line in ["one", "two", "three", "four", "five"] { continuation.yield(line) }
+                    if follow { continuation.yield("live") }
+                    continuation.finish()
+                }
+            }
+            let response = await router(engine).handle(HTTPRequest(method: "GET", target: "/containers/ib-fx-redis/logs?stdout=1&follow=1" + (tail.map { "&tail=\($0)" } ?? "")))
+            let data = try await collect(response)
+            let expected = Array(["one\n", "two\n", "three\n", "four\n", "five\n"].suffix(tail ?? 5)) + ["live\n"]
+            XCTAssertEqual(frames(data).map(\.1), expected)
+        }
+    }
+
+    func testLogTimeFiltersAndStderrOnly() async throws {
+        let engine = LogEngine(containers: try containers())
+        engine.lines = ["one", "two"]
+        for query in ["stdout=1&since=4102444800", "stdout=1&until=1", "stderr=1"] {
+            let response = await router(engine).handle(HTTPRequest(method: "GET", target: "/containers/ib-fx-redis/logs?\(query)"))
+            let data = try await collect(response)
+            XCTAssertTrue(data.isEmpty, query)
+        }
+        let response = await router(engine).handle(HTTPRequest(method: "GET", target: "/containers/ib-fx-redis/logs?stdout=1&since=1&until=4102444800"))
+        let data = try await collect(response)
+        XCTAssertEqual(frames(data).map(\.1), ["one\n", "two\n"])
+    }
+
+    func testFollowEndsWhenTheContainerStopsAndCancelsTheReader() async throws {
+        let engine = LogEngine(containers: try containers())
+        let running = engine.containers
+        let stopped = try JSONDecoder().decode([Container].self, from: JSONEncoder().encode(running)
+            .replacing(Data("running".utf8), with: Data("stopped".utf8)))
+        engine.listed = { count in count == 1 ? running : stopped }
+        let cancelled = expectation(description: "follow reader cancelled")
+        engine.logStream = { follow in
+            AsyncThrowingStream { continuation in
+                continuation.yield("history")
+                if follow {
+                    continuation.yield("last")
+                    continuation.onTermination = { _ in cancelled.fulfill() }
+                } else {
+                    continuation.finish()
+                }
+            }
+        }
+        let start = ContinuousClock.now
+        let response = await router(engine).handle(HTTPRequest(method: "GET", target: "/containers/ib-fx-redis/logs?stdout=1&follow=1"))
+        let data = try await collect(response)
+        XCTAssertEqual(frames(data).map(\.1), ["history\n", "last\n"])
+        // Checked every second, as Docker ends `logs -f` soon after the stop.
+        XCTAssertLessThan(ContinuousClock.now - start, .seconds(2))
+        XCTAssertEqual(engine.listCount, 2)
+        await fulfillment(of: [cancelled], timeout: 1)
+    }
+
+    func testCancellingHistoryStopsTheBackendReader() async throws {
+        let engine = LogEngine(containers: try containers())
+        let started = expectation(description: "history started")
+        let cancelled = expectation(description: "history cancelled")
+        engine.logStream = { _ in
+            AsyncThrowingStream { continuation in
+                continuation.onTermination = { _ in cancelled.fulfill() }
+                started.fulfill()
+            }
+        }
+        let response = await router(engine).handle(HTTPRequest(method: "GET", target: "/containers/ib-fx-redis/logs?stdout=1"))
+        let task = Task {
+            guard case .stream(let stream) = response.body else { return XCTFail("not a stream") }
+            for try await _ in stream {}
+        }
+        await fulfillment(of: [started], timeout: 1)
+        task.cancel()
+        _ = try await task.value
+        await fulfillment(of: [cancelled], timeout: 1)
+    }
+
+    func testLogTimestampExactFormat() {
+        XCTAssertEqual(LogsStatsAPI.timestamp(Date(timeIntervalSince1970: 0)), "1970-01-01T00:00:00.000000000Z")
+        XCTAssertEqual(LogsStatsAPI.timestamp(Date(timeIntervalSince1970: 1_800_000_000.125)), "2027-01-15T08:00:00.125000000Z")
+        XCTAssertEqual(LogsStatsAPI.timestamp(Date(timeIntervalSince1970: -0.5)), "1969-12-31T23:59:59.500000000Z")
     }
 
     func testNegativeTailMeansAll() async throws {
