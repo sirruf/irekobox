@@ -4,6 +4,6 @@ Irekobox follows the [Contributor Covenant, version 2.1](https://www.contributor
 In short: be respectful, assume good intent, and keep discussions about the
 work.
 
-To report unacceptable behavior, contact the maintainer privately through the
-email on [the maintainer's GitHub profile](https://github.com/sirruf). Reports
-are handled confidentially.
+To report unacceptable behavior, open an issue that asks the maintainer for a
+private contact, without the details; they'll reach out. Reports are handled
+confidentially.
