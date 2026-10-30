@@ -24,8 +24,17 @@ of its own. It comes as a command-line tool; Irekobox gives it a window.
   your images, run an app.
 - **Docker tools keep working.** Irekobox answers the Docker API on a socket of
   its own, so the `docker` CLI, Compose, Testcontainers and Dev Containers run
-  on `container`. A migration assistant brings images, volumes, registry
-  logins and Compose projects over from Docker Desktop.
+  on `container`; every release is checked against 52 scenarios run by those
+  clients. Containers that mount the Docker socket (traefik, Testcontainers’
+  Ryuk) get Irekobox’s API there. A migration assistant brings images,
+  volumes, registry logins and Compose projects over from Docker Desktop.
+- **Easy to start.** Irekobox installs Apple’s `container` and starts the
+  engine itself, shows you around on the first launch, and explains each
+  screen and term as you go. First Steps, Compose templates (WordPress,
+  Postgres with Adminer, Node with Redis, Ghost) and Docker Hub search
+  wherever an image is asked for get you running without the docs.
+- **Light.** With the window closed, Irekobox and its background helper use
+  under 1% of one CPU core; live charts and the map run only while you look.
 - **And:** a background agent that restarts containers by their restart policy
   and brings them back at login, a menu bar extra, notifications, a command
   palette (⌘K), and an MCP server for AI coding assistants.
