@@ -170,8 +170,19 @@ public final class AppState {
         let store = EngineStore(engine: engine, intervals: Self.intervals())
         self.localStore = store
         self.model = EngineModel(source: store)
-        Task { await store.startPolling() }
         observeWindowVisibility()
+        if backgroundAgentEnabled {
+            // The agent polls on its own and usually answers within a moment;
+            // poll here only if it hasn't by then (connectAgent polls at once
+            // when the connection fails), so the engine isn't asked twice.
+            Task { [weak self] in
+                try? await Task.sleep(for: Self.localPollingGrace)
+                guard let self, self.agent == nil else { return }
+                await self.localStore.startPolling()
+            }
+        } else {
+            Task { await store.startPolling() }
+        }
         Task { await connectAgent() }
         Task { [updates] in await updates.checkIfDue() }
         appUpdater.onAvailable = { [notifier] appcast in
@@ -293,7 +304,11 @@ public final class AppState {
         let client = await agentConnector.connect(configuration: Self.agentConfiguration())
         agentStatus = agentConnector.statusDescription
         agentNeedsRepair = agentConnector.needsRepair
-        guard let client else { return }
+        guard let client else {
+            // No agent: poll here (a no-op when polling already runs).
+            if agent == nil { await localStore.startPolling() }
+            return
+        }
         client.onDisconnect = { [weak self] in
             Task { @MainActor in await self?.agentLost(client) }
         }
@@ -453,6 +468,31 @@ public final class AppState {
     public func refreshSystem() async {
         await model.refresh([.system])
         if servicesRunning { await model.refresh([.diskUsage]) }
+    }
+
+    /// How long the agent gets to connect before the app polls on its own.
+    static let localPollingGrace: Duration = .seconds(1)
+
+    /// What a window opening at launch fetches: the service status unless the
+    /// agent already delivered it with its subscription, then disk usage
+    /// once services run and nothing has loaded it yet.
+    static func launchRefresh(service: ServiceState, agentBacked: Bool, diskUsageLoading: Bool) -> [Set<EngineResource>] {
+        var rounds: [Set<EngineResource>] = []
+        if service == .unknown || !agentBacked { rounds.append([.system]) }
+        if diskUsageLoading { rounds.append([.diskUsage]) }
+        return rounds
+    }
+
+    /// `refreshSystem()` for a window that opens at launch: skips what the
+    /// agent has already delivered, so the engine isn't asked twice.
+    public func refreshSystemAtLaunch() async {
+        let rounds = Self.launchRefresh(service: model.snapshot.service, agentBacked: model.isAgentBacked,
+                                        diskUsageLoading: model.isLoading(.diskUsage))
+        for resources in rounds {
+            // Disk usage needs running services; the first round settles that.
+            if resources == [.diskUsage], !servicesRunning { continue }
+            await model.refresh(resources)
+        }
     }
 
     public func startServices() async {

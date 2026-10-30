@@ -21,7 +21,7 @@ struct IrekoboxApp: App {
                 .frame(minWidth: 900, minHeight: 600)
                 .task {
                     Branding.applyDockIcon()
-                    await appState.refreshSystem()
+                    await appState.refreshSystemAtLaunch()
                 }
         }
         .defaultSize(width: 1280, height: 800)
