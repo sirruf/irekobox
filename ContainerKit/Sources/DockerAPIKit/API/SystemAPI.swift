@@ -47,6 +47,8 @@ public protocol DockerBackend: Sendable {
     func listNetworks() async throws -> [Network]
     func createNetwork(_ spec: NetworkSpec) async throws
     func deleteNetwork(_ name: String) async throws
+    /// See `ContainerEngine.supportsVolumeSync`.
+    func supportsVolumeSync() async -> Bool
 }
 
 /// Test stubs needn't implement what their tests don't reach.
@@ -60,6 +62,7 @@ extension DockerBackend {
     public func listNetworks() async throws -> [Network] { throw DockerAPIError(501, "networks not available") }
     public func createNetwork(_ spec: NetworkSpec) async throws { throw DockerAPIError(501, "networks not available") }
     public func deleteNetwork(_ name: String) async throws { throw DockerAPIError(501, "networks not available") }
+    public func supportsVolumeSync() async -> Bool { false }
 }
 
 /// Adapts a `ContainerEngine` to `DockerBackend`.
@@ -148,6 +151,7 @@ public struct EngineBackend: DockerBackend {
     public func volumeDiskUsage(_ name: String) async throws -> Int64 { try await engine.volumeDiskUsage(name) }
     public func listNetworks() async throws -> [Network] { try await engine.listNetworks() }
     public func createNetwork(_ spec: NetworkSpec) async throws { try await engine.createNetwork(spec) }
+    public func supportsVolumeSync() async -> Bool { await engine.supportsVolumeSync() }
     public func deleteNetwork(_ name: String) async throws { try await engine.deleteNetwork(name) }
 }
 

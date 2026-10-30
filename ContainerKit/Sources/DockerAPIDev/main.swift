@@ -6,11 +6,13 @@ import DockerAPIKit
 // engine, for trying real clients before the agent hosts it.
 //   swift run DockerAPIDev [/path/to/docker.sock]
 //   DOCKER_HOST=unix:///path/to/docker.sock docker version
+//   CONTAINER_CLI=/path/to/container swift run DockerAPIDev   (another CLI)
 
 let path = CommandLine.arguments.dropFirst().first
     ?? FileManager.default.homeDirectoryForCurrentUser.appending(path: ".irekobox/docker.sock").path
-let engine = XPCEngine(fallback: CLIEngine())
-let api = DockerEngineAPI(backend: EngineBackend(engine: engine), host: DockerHostInfo(appVersion: "dev"),
+let cli = ProcessInfo.processInfo.environment["CONTAINER_CLI"] ?? ContainerCLI.defaultBinaryPath
+let engine = XPCEngine(fallback: CLIEngine(cli: ContainerCLI(binaryPath: cli), stream: CLIStream(binaryPath: cli)))
+let api = DockerEngineAPI(backend: EngineBackend(engine: engine), host: DockerHostInfo(appVersion: "dev"), socketPath: path,
                           exitsFile: URL(fileURLWithPath: path).deletingLastPathComponent().appending(path: "exits.json"))
 Task {
     await api.supervisor.start()

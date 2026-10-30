@@ -272,6 +272,7 @@ public struct XPCEngine: ContainerEngine {
     }
 
     public func createVolume(_ name: String) async throws { try await fallback.createVolume(name) }
+    public func supportsVolumeSync() async -> Bool { await fallback.supportsVolumeSync() }
     public func createVolume(_ name: String, labels: [String: String], size: String?, options: [String: String]) async throws {
         try await fallback.createVolume(name, labels: labels, size: size, options: options)
     }

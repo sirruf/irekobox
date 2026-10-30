@@ -112,6 +112,12 @@ public protocol ContainerEngine: Sendable {
     func listRegistryLogins() async throws -> [RegistryLogin]
     func registryLogin(server: String, username: String, password: String, scheme: RegistryScheme) async throws
     func registryLogout(server: String) async throws
+
+    // MARK: Capabilities
+
+    /// Whether volume mounts take `sync=full|fsync|nosync` (not in Apple's
+    /// releases yet; a CLI built with that patch says so in `run --help`).
+    func supportsVolumeSync() async -> Bool
 }
 
 public extension ContainerEngine {
@@ -120,4 +126,6 @@ public extension ContainerEngine {
     }
 
     func listImageReferences() async throws -> [ContainerImage] { try await listImages() }
+
+    func supportsVolumeSync() async -> Bool { false }
 }

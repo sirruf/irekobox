@@ -182,9 +182,7 @@ if wanted restart; then
     check "on-failure:2 restarts twice" bash -c 'for i in $(seq 1 40); do [ "$(docker inspect -f "{{.RestartCount}} {{.State.Status}}" ibc-flaky)" = "2 exited" ] && exit 0; sleep 0.5; done; docker inspect -f "{{.RestartCount}} {{.State.Status}}" ibc-flaky; exit 1'
 fi
 
-# Testcontainers: Ryuk mounts the Docker socket into a container, which a VM
-# can't receive; the run disables it (cleanup is ours).
-export TESTCONTAINERS_RYUK_DISABLED=true
+# Testcontainers with Ryuk on: it mounts the Docker socket, and gets ours.
 
 if wanted testcontainers-node; then
     if command -v npm >/dev/null; then

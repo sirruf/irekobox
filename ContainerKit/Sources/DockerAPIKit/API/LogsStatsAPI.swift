@@ -244,7 +244,7 @@ public enum LogsStatsAPI {
                 [.init(op: "read", value: UInt64(max(0, $0.blockReadBytes))),
                  .init(op: "write", value: UInt64(max(0, $0.blockWriteBytes)))]
             }),
-            name: "/\(item.name)",
+            name: "/\(item.dockerName)",
             id: item.id)
         return ((try? JSONEncoder().encode(value)) ?? Data()) + Data("\n".utf8)
     }

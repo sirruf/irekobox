@@ -9,14 +9,15 @@ public enum ContainersAPI {
     public static func register(on router: inout DockerRouter, backend: DockerBackend, exits: ExitRecorder? = nil,
                                 attaches: AttachRegistry? = nil, supervisor: Supervisor? = nil,
                                 pending: PendingCopies? = nil, hosts: HostsSync? = nil,
-                                waits: ExitWaits? = nil, health: HealthMonitor? = nil, renames: Renames = Renames()) {
+                                waits: ExitWaits? = nil, health: HealthMonitor? = nil, renames: Renames = Renames(),
+                                dockerSocket: String? = nil) {
         let directory = ContainerDirectory(backend: backend, exits: exits, health: health, renames: renames)
 
         router.add("POST", "/containers/create") { request in
-            await respond { try await create(request, directory, backend, renames) }
+            await respond { try await create(request, directory, backend, renames, dockerSocket: dockerSocket) }
         }
         router.add("POST", "/containers/{id}/rename") { request in
-            await respond { try await rename(request, directory, backend, renames) }
+            await respond { try await rename(request, directory, backend, renames, dockerSocket: dockerSocket) }
         }
         router.add("GET", "/containers/json") { request in
             await respond { try await list(request, directory) }
@@ -213,7 +214,7 @@ public enum ContainersAPI {
     }
 
     static func create(_ request: DockerRequest, _ directory: ContainerDirectory, _ backend: DockerBackend,
-                       _ renames: Renames = Renames()) async throws -> HTTPResponse {
+                       _ renames: Renames = Renames(), dockerSocket: String? = nil) async throws -> HTTPResponse {
         let body = request.http.body.isEmpty ? Data("{}".utf8) : request.http.body
         let config: CreateRequest
         do {
@@ -228,7 +229,9 @@ public enum ContainersAPI {
             guard ContainerNames.isValid(trimmed) else {
                 throw DockerAPIError.badParameter("Invalid container name (\(requested)), only [a-zA-Z0-9][a-zA-Z0-9_.-] are allowed")
             }
-            if let clash = existing.first(where: { $0.id == trimmed }) {
+            if let clash = existing.first(where: {
+                DockerContainer.dockerName(for: $0) == trimmed || $0.id == ContainerNames.runtimeName(for: trimmed)
+            }) {
                 throw DockerAPIError(409, "Conflict. The container name \"/\(trimmed)\" is already in use by container \"\(DockerContainer.id(for: clash))\". You have to remove (or rename) that container to be able to reuse that name.")
             }
             name = trimmed
@@ -244,8 +247,9 @@ public enum ContainersAPI {
         }
         guard try await isLocal(reference, backend) else { throw DockerAPIError(404, "No such image: \(reference.familiar)") }
 
-        let warnings = try await make(config, name: name, platform: request.query["platform"], backend, fillVolumes: true)
-        await renames.remember(name, Renames.Spec(body: body, platform: request.query["platform"]))
+        let warnings = try await make(config, name: name, platform: request.query["platform"], backend, fillVolumes: true,
+                                      dockerSocket: dockerSocket)
+        await renames.remember(ContainerNames.runtimeName(for: name), Renames.Spec(body: body, platform: request.query["platform"]))
         let created = try await directory.resolve(name)
         return .json(CreateResponse(Id: created.id, Warnings: warnings), status: 201)
     }
@@ -261,10 +265,14 @@ public enum ContainersAPI {
 
     /// Create `name` from a Docker create request; the warnings to pass on.
     private static func make(_ config: CreateRequest, name: String, platform: String?,
-                             _ backend: DockerBackend, fillVolumes: Bool = false) async throws -> [String] {
-        let mapping = try CreateMapping.arguments(config, name: name, platform: platform,
+                             _ backend: DockerBackend, fillVolumes: Bool = false,
+                             dockerSocket: String? = nil) async throws -> [String] {
+        let (volumeSync, syncWarnings) = await volumeSyncModes(config, backend)
+        var mapping = try CreateMapping.arguments(config, name: name, platform: platform,
                                                   dnsName: await serviceDNSName(config, backend),
+                                                  dockerSocket: dockerSocket, volumeSync: volumeSync,
                                                   freePort: FreePort.pick)
+        mapping.warnings += syncWarnings
         // Named volumes that don't exist yet: the runtime makes them with the
         // container, and Docker fills those from the image too (an empty
         // `pgdata` with lost+found would stop postgres's initdb).
@@ -295,10 +303,28 @@ public enum ContainersAPI {
                 fresh.append(mount)
             }
             if !fresh.isEmpty {
-                await FreshVolumes.copyUp(fresh, image: mapping.image, container: name, backend: backend)
+                await FreshVolumes.copyUp(fresh, image: mapping.image, container: ContainerNames.runtimeName(for: name), backend: backend)
             }
         }
         return mapping.warnings
+    }
+
+    /// Sync modes of the named volumes this request mounts, when the CLI
+    /// takes them; otherwise a warning for each that asked for one.
+    static func volumeSyncModes(_ config: CreateRequest, _ backend: DockerBackend) async -> ([String: String], [String]) {
+        let host = config.HostConfig
+        let names = Set((host?.Binds ?? []).compactMap { $0.split(separator: ":").first.map(String.init) }
+                        + (host?.Mounts ?? []).filter { ($0.Type ?? "volume").lowercased() == "volume" }.compactMap(\.Source))
+        guard !names.isEmpty, let volumes = try? await backend.listVolumes() else { return ([:], []) }
+        var modes: [String: String] = [:]
+        for volume in volumes where names.contains(volume.name) {
+            if let sync = volume.configuration.labels?[DockerLabels.volumeSync] { modes[volume.name] = sync }
+        }
+        guard !modes.isEmpty else { return ([:], []) }
+        if await backend.supportsVolumeSync() { return (modes, []) }
+        return ([:], modes.keys.sorted().map {
+            "Volume \($0): sync=\(modes[$0]!) is ignored; this container CLI mounts volumes with fsync."
+        })
     }
 
     // MARK: - Rename
@@ -308,7 +334,7 @@ public enum ContainersAPI {
     /// it ever starts: that one is made again under the new name from the
     /// request it was created with, and its old ID keeps finding it.
     static func rename(_ request: DockerRequest, _ directory: ContainerDirectory, _ backend: DockerBackend,
-                       _ renames: Renames) async throws -> HTTPResponse {
+                       _ renames: Renames, dockerSocket: String? = nil) async throws -> HTTPResponse {
         guard var newName = request.query["name"], !newName.isEmpty else {
             throw DockerAPIError.badParameter("name is required")
         }
@@ -317,20 +343,22 @@ public enum ContainersAPI {
             throw DockerAPIError.badParameter("Invalid container name (\(newName)), only [a-zA-Z0-9][a-zA-Z0-9_.-] are allowed")
         }
         let item = try await directory.resolve(request.parameters["id"]!)
-        if item.name == newName { return .noContent }
-        if let clash = try await backend.listContainers(all: true).first(where: { $0.id == newName }) {
+        if item.dockerName == newName { return .noContent }
+        if let clash = try await backend.listContainers(all: true).first(where: {
+            DockerContainer.dockerName(for: $0) == newName || $0.id == ContainerNames.runtimeName(for: newName)
+        }) {
             throw DockerAPIError(409, "Conflict. The container name \"/\(newName)\" is already in use by container \"\(DockerContainer.id(for: clash))\". You have to remove (or rename) that container to be able to reuse that name.")
         }
         guard item.state == .created, let spec = await renames.spec(item.name) else {
             throw DockerAPIError(409, "Error when allocating new name: Irekobox can rename a container only before it first starts, when it was created through this Docker API")
         }
         let config = try JSONDecoder().decode(CreateRequest.self, from: spec.body)
-        _ = try await make(config, name: newName, platform: spec.platform, backend)
+        _ = try await make(config, name: newName, platform: spec.platform, backend, dockerSocket: dockerSocket)
         try await engine { try await backend.deleteContainer(item.name, force: false) }
         if let volumes = item.container.configuration.labels[DockerLabels.anonymousVolumes] {
             for volume in volumes.split(separator: ",") { try? await backend.deleteVolume(String(volume)) }
         }
-        await renames.moved(item.name, id: item.id, to: newName, spec)
+        await renames.moved(item.name, id: item.id, to: ContainerNames.runtimeName(for: newName), spec)
         return .noContent
     }
 
@@ -354,7 +382,7 @@ public enum ContainersAPI {
         if !filters["health"].isEmpty && !filters["health"].contains(item.health?.status.rawValue ?? "none") { return false }
         if !filters.matchesLabels(container.configuration.labels) { return false }
         if !filters["name"].isEmpty && !filters["name"].contains(where: { pattern in
-            let name = container.id
+            let name = item.dockerName
             if let regex = try? Regex(pattern) { return name.contains(regex) || "/\(name)".contains(regex) }
             return name.contains(pattern)
         }) { return false }

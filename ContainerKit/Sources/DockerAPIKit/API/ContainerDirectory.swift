@@ -18,6 +18,12 @@ public struct DockerContainer: Sendable {
     public var health: HealthMonitor.Health? = nil
 
     public var name: String { container.id }
+    /// The name Docker clients know it by.
+    public var dockerName: String { Self.dockerName(for: container) }
+
+    public static func dockerName(for container: Container) -> String {
+        container.configuration.labels[DockerLabels.name] ?? container.id
+    }
 
     /// Stable for the life of a container: its name plus creation time, so a
     /// recreated container with the same name gets a new ID, as in Docker.
@@ -83,7 +89,9 @@ public struct ContainerDirectory: Sendable {
     public func resolve(_ reference: String) async throws -> DockerContainer {
         let containers = try await backend.listContainers(all: true).filter { !$0.isSystem }
         let name = reference.hasPrefix("/") ? String(reference.dropFirst()) : reference
-        if let match = containers.first(where: { $0.id == name }) { return await describe(match) }
+        if let match = containers.first(where: { $0.id == name || DockerContainer.dockerName(for: $0) == name }) {
+            return await describe(match)
+        }
         if let match = containers.first(where: { DockerContainer.id(for: $0) == reference }) { return await describe(match) }
         let prefixed = reference.count >= 1 ? containers.filter { DockerContainer.id(for: $0).hasPrefix(reference.lowercased()) } : []
         if prefixed.count > 1 {

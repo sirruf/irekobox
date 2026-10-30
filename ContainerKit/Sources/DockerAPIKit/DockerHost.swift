@@ -18,8 +18,8 @@ public actor DockerHost {
                 socketPath: String, exitsFile: URL?, supervisorFile: URL? = nil) {
         self.socketPath = socketPath
         self.backend = backend
-        api = DockerEngineAPI(backend: backend, host: DockerHostInfo(appVersion: appVersion), exitsFile: exitsFile,
-                              supervisorFile: supervisorFile)
+        api = DockerEngineAPI(backend: backend, host: DockerHostInfo(appVersion: appVersion), socketPath: socketPath,
+                              exitsFile: exitsFile, supervisorFile: supervisorFile)
     }
 
     /// Start recording exits and supervising restart policies. Call once at launch.

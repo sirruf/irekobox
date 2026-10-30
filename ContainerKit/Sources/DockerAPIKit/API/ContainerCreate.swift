@@ -137,6 +137,11 @@ public enum DockerLabels {
     public static let aliases = "com.irekobox.docker.aliases"
     /// `docker run --rm`: a failed start removes the container, as in Docker.
     public static let autoRemove = "com.irekobox.docker.auto-remove"
+    /// The Docker name of a container whose name is too long for the runtime.
+    public static let name = "com.irekobox.docker.name"
+    /// A volume's `sync` driver option (`full`, `fsync`, `nosync`), applied
+    /// where it is mounted.
+    public static let volumeSync = "com.irekobox.docker.volume-sync"
 }
 
 /// Docker create request → `container create` arguments.
@@ -159,7 +164,10 @@ enum CreateMapping {
     /// - Parameter freePort: a free host port, for bindings without one.
     /// `dnsName`: a name under the local domain for the first network (a
     /// compose service's `web.shop.test`), registered as a runtime alias.
+    /// `dockerSocket`: our API's socket, given to a container that mounts
+    /// the Docker socket. `volumeSync`: sync modes of named volumes, by name.
     static func arguments(_ request: CreateRequest, name: String, platform: String?, dnsName: String? = nil,
+                          dockerSocket: String? = nil, volumeSync: [String: String] = [:],
                           freePort: () throws -> Int) throws -> Result {
         guard let image = request.Image, !image.isEmpty else {
             throw DockerAPIError.badParameter("config cannot be empty in order to create a container")
@@ -167,9 +175,12 @@ enum CreateMapping {
         let host = request.HostConfig
         try refuseUnsupported(request)
 
+        let dockerName = name
+        let name = ContainerNames.runtimeName(for: dockerName)
         var args = ["--name", name]
         var warnings: [String] = []
         var labels = request.Labels ?? [:]
+        if name != dockerName { labels[DockerLabels.name] = dockerName }
 
         if let platform, !platform.isEmpty { args += ["--platform", platform] }
         for entry in request.Env ?? [] { args += ["-e", entry] }
@@ -196,13 +207,25 @@ enum CreateMapping {
         var anonymous: [(String, String)] = []
         var volumeMounts: [(String, String)] = []
         for bind in host?.Binds ?? [] {
-            args += ["-v", try bindSpec(bind)]
             let parts = bind.split(separator: ":", omittingEmptySubsequences: false).map(String.init)
-            if parts.count >= 2, !parts[0].hasPrefix("/"), !parts[0].hasPrefix(".") { volumeMounts.append((parts[0], parts[1])) }
+            if parts.count >= 2, parts[1] == dockerSocketTarget {
+                args += try dockerSocketMount(dockerSocket)
+                continue
+            }
+            var spec = try bindSpec(bind)
+            if parts.count >= 2, !parts[0].hasPrefix("/"), !parts[0].hasPrefix(".") {
+                volumeMounts.append((parts[0], parts[1]))
+                if let sync = volumeSync[parts[0]] { spec += (spec.hasSuffix(":ro") ? "," : ":") + "sync=\(sync)" }
+            }
+            args += ["-v", spec]
         }
         for mount in host?.Mounts ?? [] {
             guard let target = mount.Target, !target.isEmpty else {
                 throw DockerAPIError.badParameter("invalid mount config: Target is required")
+            }
+            if (mount.Type ?? "").lowercased() == "bind", target == dockerSocketTarget {
+                args += try dockerSocketMount(dockerSocket)
+                continue
             }
             // `--mount type=bind` takes folders only; `-v` takes a single
             // file too (Compose secrets arrive as such mounts).
@@ -215,7 +238,10 @@ enum CreateMapping {
                 var spec = "type=\(mount.Type?.lowercased() ?? "volume"),target=\(target)"
                 if let source = mount.Source, !source.isEmpty {
                     spec = "type=\(mount.Type?.lowercased() ?? "volume"),source=\(source),target=\(target)"
-                    if (mount.Type ?? "volume").lowercased() == "volume" { volumeMounts.append((source, target)) }
+                    if (mount.Type ?? "volume").lowercased() == "volume" {
+                        volumeMounts.append((source, target))
+                        if let sync = volumeSync[source] { spec += ",sync=\(sync)" }
+                    }
                 } else if (mount.Type ?? "volume").lowercased() == "volume" {
                     let volume = anonymousVolumeName(container: name, path: target)
                     anonymous.append((volume, target))
@@ -380,6 +406,20 @@ enum CreateMapping {
         }
         if let userns = host?.UsernsMode, !userns.isEmpty { try refuse("HostConfig.UsernsMode", "user namespaces are not configurable") }
         if !(host?.ExtraHosts ?? []).isEmpty { try refuse("HostConfig.ExtraHosts", "/etc/hosts entries can't be added") }
+    }
+
+    /// Where containers look for the Docker API (Testcontainers' Ryuk, log
+    /// collectors). The source is often the client's own socket path, so
+    /// only the target is matched.
+    static let dockerSocketTarget = "/var/run/docker.sock"
+
+    /// The runtime relays a bind-mounted Unix socket into the VM over vsock
+    /// (as for `--ssh`); handing it our socket gives the container this API.
+    static func dockerSocketMount(_ socket: String?) throws -> [String] {
+        guard let socket else {
+            throw DockerAPIError.badParameter("mounting \(dockerSocketTarget) needs the Irekobox Docker API socket")
+        }
+        return ["-v", "\(socket):\(dockerSocketTarget)"]
     }
 
     static func isFile(_ path: String) -> Bool {

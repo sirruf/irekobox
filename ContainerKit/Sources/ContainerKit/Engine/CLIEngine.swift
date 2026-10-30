@@ -38,6 +38,10 @@ public struct CLIEngine: ContainerEngine {
     public func systemStatus() async throws -> SystemStatus? { try await system.status() }
     public func startServices() async throws { try await system.startServices() }
     public func stopServices() async throws { try await system.stopServices() }
+    public func supportsVolumeSync() async -> Bool {
+        guard let help = try? await cli.data(["run", "--help"]) else { return false }
+        return String(decoding: help, as: UTF8.self).contains("sync=full|fsync|nosync")
+    }
     public func systemProperties() async throws -> String {
         String(decoding: try await cli.data(["system", "property", "list"]), as: UTF8.self)
     }

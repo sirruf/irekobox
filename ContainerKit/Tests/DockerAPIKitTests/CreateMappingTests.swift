@@ -81,6 +81,51 @@ final class CreateMappingTests: XCTestCase {
         XCTAssertTrue(result.arguments.contains("type=bind,source=\(folder.path),target=/data"), "a folder keeps --mount")
     }
 
+    func testVolumeSyncModesGoWithTheirMounts() throws {
+        let request = try JSONDecoder().decode(CreateRequest.self, from: Data(#"""
+        {"Image":"postgres","HostConfig":{"Binds":["pgdata:/var/lib/postgresql/data","wal:/wal:ro","/Users/me/x:/x"],
+          "Mounts":[{"Type":"volume","Source":"cache","Target":"/cache","ReadOnly":true},
+                    {"Type":"volume","Source":"plain","Target":"/plain"}]}}
+        """#.utf8))
+        let result = try CreateMapping.arguments(request, name: "db", platform: nil,
+                                                 volumeSync: ["pgdata": "nosync", "wal": "full", "cache": "nosync"]) { 49153 }
+        let args = result.arguments
+        XCTAssertTrue(args.contains("pgdata:/var/lib/postgresql/data:sync=nosync"))
+        XCTAssertTrue(args.contains("wal:/wal:ro,sync=full"))
+        XCTAssertTrue(args.contains("/Users/me/x:/x"), "bind mounts have no sync mode")
+        XCTAssertTrue(args.contains("type=volume,source=cache,target=/cache,sync=nosync,readonly"))
+        XCTAssertTrue(args.contains("type=volume,source=plain,target=/plain"))
+    }
+
+    func testANameTooLongForTheRuntimeIsCutAndKept() throws {
+        let long = "reaper_" + String(repeating: "d92abc88", count: 8)
+        let result = try map(#"{"Image":"testcontainers/ryuk"}"#, name: long)
+        let runtime = result.arguments[1]
+        XCTAssertEqual(runtime.count, 63)
+        XCTAssertTrue(runtime.hasPrefix(String(long.prefix(54)) + "-"))
+        XCTAssertTrue(ContainerNames.isValid(runtime))
+        XCTAssertNotEqual(runtime, ContainerNames.runtimeName(for: long + "x"), "the hash tells similar names apart")
+        XCTAssertTrue(result.arguments.contains("\(DockerLabels.name)=\(long)"))
+        XCTAssertEqual(try map(#"{"Image":"x"}"#, name: String(repeating: "a", count: 63)).arguments[1].count, 63)
+        XCTAssertFalse(try map(#"{"Image":"x"}"#).arguments.contains { $0.hasPrefix(DockerLabels.name) })
+    }
+
+    func testTheDockerSocketIsOurs() throws {
+        // Testcontainers' Ryuk mounts the client's socket; compose files often
+        // a Binds entry. Either way the container gets our API.
+        let request = try JSONDecoder().decode(CreateRequest.self, from: Data(#"""
+        {"Image":"testcontainers/ryuk","HostConfig":{
+          "Binds":["/Users/me/.docker/run/docker.sock:/var/run/docker.sock:rw"],
+          "Mounts":[{"Type":"bind","Source":"/var/run/docker.sock","Target":"/var/run/docker.sock","ReadOnly":true}]}}
+        """#.utf8))
+        let socket = "/Users/me/.irekobox/docker.sock"
+        let result = try CreateMapping.arguments(request, name: "ryuk", platform: nil, dockerSocket: socket) { 49153 }
+        let volumes = result.arguments.enumerated().filter { $0.offset > 0 && result.arguments[$0.offset - 1] == "-v" }.map(\.element)
+        XCTAssertEqual(volumes, ["\(socket):/var/run/docker.sock", "\(socket):/var/run/docker.sock"])
+        XCTAssertTrue(result.anonymousVolumes.isEmpty)
+        XCTAssertThrowsError(try map(#"{"Image":"x","HostConfig":{"Binds":["/var/run/docker.sock:/var/run/docker.sock"]}}"#))
+    }
+
     func testNetworksWithAliases() throws {
         let result = try map(#"""
         {"Image":"app","HostConfig":{"NetworkMode":"shop_default"},

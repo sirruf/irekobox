@@ -11,7 +11,10 @@ public final class DockerEngineAPI: Sendable {
     public let health: HealthMonitor
     public let alerts: AlertLog
 
-    public init(backend: DockerBackend, host: DockerHostInfo, exitsFile: URL?, supervisorFile: URL? = nil) {
+    /// `socketPath`: where the API listens, mounted into containers that ask
+    /// for the Docker socket.
+    public init(backend: DockerBackend, host: DockerHostInfo, socketPath: String? = nil, exitsFile: URL?,
+                supervisorFile: URL? = nil) {
         let exits = ExitRecorder(backend: backend, file: exitsFile)
         let supervisor = Supervisor(backend: backend, exits: exits, stateFile: supervisorFile)
         let attaches = AttachRegistry()
@@ -25,7 +28,8 @@ public final class DockerEngineAPI: Sendable {
         var router = DockerRouter()
         SystemAPI.register(on: &router, backend: backend, host: host)
         ContainersAPI.register(on: &router, backend: backend, exits: exits, attaches: attaches, supervisor: supervisor,
-                               pending: pending, hosts: hosts, waits: ExitWaits(), health: health)
+                               pending: pending, hosts: hosts, waits: ExitWaits(), health: health,
+                               dockerSocket: socketPath)
         ExecAPI.register(on: &router, backend: backend, attaches: attaches, execs: execs, exits: exits)
         LogsStatsAPI.register(on: &router, backend: backend)
         ImagesAPI.register(on: &router, backend: backend)
@@ -47,7 +51,7 @@ public final class DockerEngineAPI: Sendable {
                     type: "container", action: "health_status: \(now.status.rawValue)",
                     actorID: DockerContainer.id(for: container),
                     attributes: container.configuration.labels.merging(
-                        ["name": container.id, "image": ContainerModels.familiar(container.configuration.image.reference)]) { $1 },
+                        ["name": DockerContainer.dockerName(for: container), "image": ContainerModels.familiar(container.configuration.image.reference)]) { $1 },
                     time: Date()))
                 let output = now.log.last?.output.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
                 if now.status == .unhealthy {

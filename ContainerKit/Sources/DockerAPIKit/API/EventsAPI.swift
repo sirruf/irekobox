@@ -131,7 +131,7 @@ public actor EventHub {
             for container in containers where !container.isSystem {
                 let id = DockerContainer.id(for: container)
                 snapshot.containers[id] = ContainerState(
-                    id: id, name: container.id, image: ContainerModels.familiar(container.configuration.image.reference),
+                    id: id, name: DockerContainer.dockerName(for: container), image: ContainerModels.familiar(container.configuration.image.reference),
                     labels: container.configuration.labels, running: container.state.isRunning,
                     started: container.status.startedDate)
             }

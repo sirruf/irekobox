@@ -144,7 +144,7 @@ enum ContainerModels {
         let created = DockerTime.parse(container.configuration.creationDate)
         return Summary(
             Id: item.id,
-            Names: ["/\(container.id)"],
+            Names: ["/\(DockerContainer.dockerName(for: container))"],
             Image: familiar(container.configuration.image.reference),
             ImageID: container.configuration.image.descriptor.digest,
             Command: command(container),
@@ -308,7 +308,7 @@ enum ContainerModels {
                          FinishedAt: DockerTime.string(item.exit?.exitedAt),
                          Health: item.health.map(Inspect.HealthState.init)),
             Image: configuration.image.descriptor.digest,
-            Name: "/\(container.id)",
+            Name: "/\(DockerContainer.dockerName(for: container))",
             RestartCount: restartCount,
             Platform: configuration.platform.os,
             HostConfig: .init(NetworkMode: networkMode(container),

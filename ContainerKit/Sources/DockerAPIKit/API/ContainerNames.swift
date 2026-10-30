@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 
 /// Docker-style names for containers created without one.
 enum ContainerNames {
@@ -16,6 +17,15 @@ enum ContainerNames {
     /// Docker's rule: `[a-zA-Z0-9][a-zA-Z0-9_.-]+`.
     static func isValid(_ name: String) -> Bool {
         name.wholeMatch(of: /[a-zA-Z0-9][a-zA-Z0-9_.-]+/) != nil
+    }
+
+    /// The runtime takes names up to a DNS label (63); Docker has no limit
+    /// (Testcontainers' `reaper_<64 hex>`). A longer name is cut and made
+    /// unique with a hash; the whole one is kept in ``DockerLabels/name``.
+    static func runtimeName(for name: String) -> String {
+        guard name.count > 63 else { return name }
+        let hash = SHA256.hash(data: Data(name.utf8)).prefix(4).map { String(format: "%02x", $0) }.joined()
+        return "\(name.prefix(54))-\(hash)"
     }
 }
 

@@ -53,11 +53,16 @@ public enum VolumesAPI {
         containers.filter { ($0.configuration.mounts ?? []).contains { $0.volumeName == volume } }
     }
 
+    static let syncModes: Set<String> = ["full", "fsync", "nosync"]
+
     static func model(_ volume: Volume, users containers: [Container], size: Int64? = nil) -> Model {
         let created = volume.configuration.creationDate.flatMap(DockerTime.parse)
+        var labels = volume.configuration.labels ?? [:]
+        var options = volume.configuration.options ?? [:]
+        // The sync option is ours to keep; Docker shows it with the others.
+        if let sync = labels.removeValue(forKey: DockerLabels.volumeSync) { options["sync"] = sync }
         var model = Model(Name: volume.name, Driver: volume.driver, Mountpoint: volume.source ?? "",
-                          CreatedAt: DockerTime.string(created), Labels: volume.configuration.labels ?? [:],
-                          Options: volume.configuration.options ?? [:])
+                          CreatedAt: DockerTime.string(created), Labels: labels, Options: options)
         if let size {
             model.UsageData = .init(Size: size, RefCount: users(of: volume.name, in: containers).count)
         }
@@ -109,8 +114,15 @@ public enum VolumesAPI {
         }
         var options = spec.DriverOpts ?? [:]
         let size = options.removeValue(forKey: "size")
+        var labels = spec.Labels ?? [:]
+        if let sync = options.removeValue(forKey: "sync") {
+            guard syncModes.contains(sync) else {
+                throw DockerAPIError.badParameter("volume option sync=\(sync) is not valid: use full, fsync or nosync")
+            }
+            labels[DockerLabels.volumeSync] = sync
+        }
         if let other = options.keys.sorted().first {
-            throw DockerAPIError.badParameter("volume option \"\(other)\" is not supported (only size)")
+            throw DockerAPIError.badParameter("volume option \"\(other)\" is not supported (only size and sync)")
         }
         let name = spec.Name.flatMap { $0.isEmpty ? nil : $0 } ?? randomName()
         let containers = try await backend.listContainers(all: true)
@@ -118,7 +130,7 @@ public enum VolumesAPI {
         if let existing = try await backend.listVolumes().first(where: { $0.name == name }) {
             return .json(model(existing, users: containers), status: 201)
         }
-        try await ContainersAPI.engine { try await backend.createVolume(name, labels: spec.Labels ?? [:], size: size) }
+        try await ContainersAPI.engine { try await backend.createVolume(name, labels: labels, size: size) }
         await FreshVolumes.shared.add(name)
         let volume = try await find(name, backend)
         return .json(model(volume, users: containers), status: 201)
@@ -201,7 +213,7 @@ public actor FreshVolumes {
     static func copyUp(_ mounts: [(name: String, path: String)], image: String, container: String,
                        backend: DockerBackend) async {
         for (index, mount) in mounts.enumerated() {
-            let helper = "\(container)-copyup-\(index)"
+            let helper = ContainerNames.runtimeName(for: "\(container)-copyup-\(index)")
             let script = """
             rmdir /.irekobox-copyup/lost+found 2>/dev/null
             s=\(shellQuote(mount.path)); [ -d "$s" ] || exit 0
