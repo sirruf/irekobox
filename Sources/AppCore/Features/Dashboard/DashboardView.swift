@@ -69,12 +69,12 @@ struct DashboardView: View {
                 app.model.containers.filter { $0.state.isRunning && !$0.isSystem }.map(\.id)
             }
         }
-        .task {
+        // Clusters run their nodes as containers, which are polled already:
+        // list clusters when a node comes, goes or changes state (and on ⌘R),
+        // not on a timer of their own.
+        .task(id: "\(app.refreshTick) \(ClustersModel.nodeKey(in: app.model.containers))") {
             let repository = ClusterRepository(cli: app.cli, stream: CLIStream(binaryPath: Settings.shared.binaryPath))
-            while !Task.isCancelled {
-                if let list = try? await repository.list() { clusters = list }
-                try? await Task.sleep(for: .seconds(10))
-            }
+            if let list = try? await repository.list() { clusters = list }
         }
         .confirmationDialog("Free up disk space?", isPresented: $confirmCleanup, titleVisibility: .visible) {
             Button("Remove Stopped Containers", role: .destructive) {

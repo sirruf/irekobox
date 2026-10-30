@@ -46,8 +46,10 @@ struct ClusterView: View {
                 model = ClusterModel(name: name, node: node, cli: app.cli)
             }
         }
-        .task(id: model == nil) {
-            guard let model else { return }
+        // kubectl can only answer while the nodes run; a stopped cluster
+        // shows as such without asking.
+        .task(id: "\(model == nil) \(cluster?.isRunning == true)") {
+            guard let model, cluster?.isRunning == true else { return }
             while !Task.isCancelled {
                 await model.refresh()
                 try? await Task.sleep(for: .seconds(4))

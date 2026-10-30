@@ -86,6 +86,21 @@ final class ClustersModel {
         await perform(name) { try await repository.writeConfig(name, to: path) }
         if error == nil { notice = String(localized: "Wrote \((path as NSString).abbreviatingWithTildeInPath).") }
     }
+
+    /// The cluster nodes among `containers` with their states: what
+    /// `cluster list` would report, so it is only run when this changes.
+    /// Nodes are containers `container` runs itself, like the builder and
+    /// machines, but neither of those.
+    static func nodeKey(in containers: [Container]) -> [String] {
+        containers.filter(\.isClusterNode).map { "\($0.id) \($0.state)" }.sorted()
+    }
+}
+
+private extension Container {
+    var isClusterNode: Bool {
+        guard let role = configuration.labels["com.apple.container.resource.role"] else { return false }
+        return role != "builder" && !isMachine
+    }
 }
 
 struct KubernetesView: View {
@@ -128,11 +143,15 @@ struct KubernetesView: View {
                 model = ClustersModel(cli: app.cli, stream: CLIStream(binaryPath: Settings.shared.binaryPath))
             }
         }
-        .task(id: model == nil) {
+        .task { await app.model.observe([.containers]) }
+        // Nodes are containers, which are polled already: re-list the
+        // clusters when a node comes, goes or changes state (and on ⌘R), and
+        // otherwise only now and then.
+        .task(id: "\(model == nil) \(app.refreshTick) \(ClustersModel.nodeKey(in: app.model.containers))") {
             guard let model else { return }
             while !Task.isCancelled {
                 await model.refresh()
-                try? await Task.sleep(for: .seconds(5))
+                try? await Task.sleep(for: .seconds(30))
             }
         }
         .sheet(isPresented: $showCreate) {
