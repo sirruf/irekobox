@@ -48,7 +48,10 @@ struct LiveMap: View {
         .frame(maxWidth: .infinity, alignment: .top)
         .backgroundPreferenceValue(MapAnchors.self) { anchors in
             GeometryReader { proxy in
-                TimelineView(.animation(paused: reduceMotion)) { timeline in
+                // Lines to running things move; with nothing running the
+                // map holds still instead of redrawing every frame.
+                TimelineView(.animation(minimumInterval: 1 / 30,
+                                        paused: reduceMotion || !nodes.contains(where: \.isLive))) { timeline in
                     let phase = reduceMotion ? 0 : -timeline.date.timeIntervalSinceReferenceDate * 22
                     Canvas { context, _ in
                         guard let mac = anchors["mac"].map({ proxy[$0] }) else { return }
