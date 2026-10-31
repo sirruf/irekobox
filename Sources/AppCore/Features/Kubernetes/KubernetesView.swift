@@ -123,7 +123,7 @@ struct KubernetesView: View {
             .navigationSubtitle("Local clusters for apps headed to Kubernetes")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    Button("New Cluster…") { showCreate = true }
+                    Button { showCreate = true } label: { ToolbarTitle("New Cluster") }
                         .buttonStyle(.borderedProminent)
                         .help("Create a cluster")
                         .accessibilityIdentifier("kubernetes.new")
@@ -179,7 +179,7 @@ struct KubernetesView: View {
             } description: {
                 Text("A local Kubernetes cluster runs its nodes as containers. It boots in about a minute; then you see what runs in it here, and kubectl reaches it too.")
             } actions: {
-                Button("New Cluster…") { showCreate = true }.buttonStyle(.borderedProminent)
+                Button("New Cluster") { showCreate = true }.buttonStyle(.borderedProminent)
             }
         } else {
             ScrollView {

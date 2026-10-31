@@ -317,7 +317,7 @@ struct RunSheet: View {
             ForEach($model.config.mounts) { $mount in
                 HStack(spacing: DS.Spacing.xs) {
                     TextField("~/folder or volume", text: $mount.source)
-                    Button("Choose…") { chooseFolder(for: mount.id) }
+                    Button("Choose") { chooseFolder(for: mount.id) }
                         .controlSize(.small)
                         .help("A folder on this Mac")
                     if !app.model.volumes.isEmpty {
@@ -361,7 +361,7 @@ struct RunSheet: View {
             }
             HStack(spacing: DS.Spacing.l) {
                 Button("Add Variable") { model.config.variables.append(.init()) }
-                Button("Import .env…") { importEnvFile() }
+                Button("Import .env") { importEnvFile() }
             }
             .buttonStyle(.link)
         }

@@ -178,7 +178,7 @@ struct PaletteView: View {
         }
         let lowered = typed.lowercased()
         if lowered.hasPrefix("run "), case let image = String(typed.dropFirst(4)).trimmingCharacters(in: .whitespaces), !image.isEmpty {
-            items.append(PaletteItem(id: "run-typed", kind: .action, title: String(localized: "Run \(image)…"),
+            items.append(PaletteItem(id: "run-typed", kind: .action, title: String(localized: "Run \(image)"),
                                      subtitle: String(localized: "Run Container, filled in"), systemImage: "play",
                                      keywords: "run \(image)",
                                      perform: { [app] in app.requestRun(image: image) }))
@@ -215,13 +215,13 @@ struct PaletteView: View {
                 systemImage: section.systemImage, keywords: section.rawValue,
                 perform: { [app] in app.section = section }))
         }
-        items.append(PaletteItem(id: "action-run", kind: .action, title: String(localized: "Run Container…"), subtitle: "⌘N",
+        items.append(PaletteItem(id: "action-run", kind: .action, title: String(localized: "Run Container"), subtitle: "⌘N",
                                  systemImage: "play", keywords: "new container start",
                                  perform: { [app] in app.requestRun() }))
         items.append(PaletteItem(id: "action-refresh", kind: .action, title: String(localized: "Refresh"), subtitle: "⌘R",
                                  systemImage: "arrow.clockwise", keywords: "reload",
                                  perform: { [app] in app.requestRefresh() }))
-        items.append(PaletteItem(id: "action-settings", kind: .action, title: String(localized: "Settings…"), subtitle: "⌘,",
+        items.append(PaletteItem(id: "action-settings", kind: .action, title: String(localized: "Settings"), subtitle: "⌘,",
                                  systemImage: "gearshape", keywords: "preferences engine registries",
                                  perform: { [openSettings] in openSettings() }))
         items.append(PaletteItem(id: "action-stop-engine", kind: .action, title: String(localized: "Stop Engine"),

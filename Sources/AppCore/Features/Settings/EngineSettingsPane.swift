@@ -139,7 +139,7 @@ struct EngineSettingsPane: View {
                     TextField("Domain", text: $newDomain)
                         .frame(maxWidth: 160)
                         .accessibilityIdentifier("engine.newDomain")
-                    Button(domainBusy ? "Setting Up…" : "Set Up…") { Task { await createDomain() } }
+                    Button(domainBusy ? "Setting Up…" : "Set Up") { Task { await createDomain() } }
                         .disabled(domainBusy || !Self.validDomain(newDomain))
                 }
             }

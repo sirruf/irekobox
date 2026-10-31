@@ -114,7 +114,7 @@ struct EditContainerSheet: View {
                         }
                         if app.model.volumes.isEmpty { Text("No volumes yet") }
                         Divider()
-                        Button("Folder on This Mac…") {
+                        Button("Folder on This Mac") {
                             let panel = NSOpenPanel()
                             panel.canChooseDirectories = true
                             panel.canChooseFiles = false

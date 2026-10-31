@@ -128,7 +128,7 @@ struct LogsTab: View {
                 NSPasteboard.general.setString(model.visibleText(), forType: .string)
             }
             .help("Copy the visible lines")
-            Button("Export…") { export() }
+            Button("Export") { export() }
             Button("Clear") { model.clear() }
                 .help("Clear this view (the container's log is kept)")
             if let window { OpenLogsWindowButton(target: window) }

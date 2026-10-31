@@ -34,7 +34,7 @@ struct FirstSteps: View {
         return [
             Step(id: "run", title: String(localized: "Run a container"),
                  detail: String(localized: "Start an app from an image, for example nginx:alpine, a web server."),
-                 done: !containers.isEmpty, action: String(localized: "Run Container…")) { app.requestRun() },
+                 done: !containers.isEmpty, action: String(localized: "Run Container")) { app.requestRun() },
             Step(id: "open", title: String(localized: "Open it in the browser"),
                  detail: String(localized: "Publish a port, then click it: localhost:8080 shows what runs inside."),
                  done: Milestone.openedInBrowser.reached, action: String(localized: "Go to Containers")) { app.section = .containers },

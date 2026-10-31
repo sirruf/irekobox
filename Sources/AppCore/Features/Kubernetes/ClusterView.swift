@@ -160,7 +160,7 @@ struct ClusterView: View {
             ToolbarSpacer(.fixed, placement: .primaryAction)
             ToolbarItem(placement: .primaryAction) {
                 Menu {
-                    Button("Load Image…") { loadingImage = true }
+                    Button("Load Image") { loadingImage = true }
                         .help("Copy an image from this Mac into the cluster, for pods to use without a registry")
                     Divider()
                     Toggle("Show Kubernetes' Own Workloads", isOn: Binding(get: { model.showSystem }, set: { model.showSystem = $0 }))
@@ -174,10 +174,10 @@ struct ClusterView: View {
             }
             ToolbarSpacer(.fixed, placement: .primaryAction)
             ToolbarItemGroup(placement: .primaryAction) {
-                Button("Apply YAML…") { applying = "" }
+                Button { applying = "" } label: { ToolbarTitle("Apply YAML") }
                     .help("Apply your own manifests")
                     .disabled(!cluster.isRunning)
-                Button("Connect kubectl") { showConnect = true }
+                Button { showConnect = true } label: { ToolbarTitle("Connect kubectl") }
                     .help("Use kubectl or another tool with this cluster")
                     .popover(isPresented: $showConnect, arrowEdge: .bottom) {
                         ConnectPopover(cluster: name, kubeconfig: clusters.kubeconfig(of: name), clusters: clusters)
@@ -185,7 +185,7 @@ struct ClusterView: View {
             }
             ToolbarSpacer(.fixed, placement: .primaryAction)
             ToolbarItem(placement: .primaryAction) {
-                Button("Run an App…") { deploying = true }
+                Button { deploying = true } label: { ToolbarTitle("Run an App") }
                     .buttonStyle(.borderedProminent)
                     .help("Run an image in the cluster; Irekobox works out the details")
                     .disabled(!cluster.isRunning)
@@ -237,7 +237,7 @@ struct ClusterView: View {
                 } description: {
                     Text("Run an image with Deploy, apply your own manifests, or use kubectl (Connect kubectl shows how).")
                 } actions: {
-                    Button("Run an App…") { deploying = true }.buttonStyle(.borderedProminent)
+                    Button("Run an App") { deploying = true }.buttonStyle(.borderedProminent)
                     if !model.showSystem {
                         Button("Show Kubernetes' Own Workloads") { model.showSystem = true }
                     }
@@ -332,7 +332,7 @@ struct ClusterView: View {
                                     problems: model.portProblems[service.id] ?? [],
                                     onFix: { problem in Task { await model.fix(problem) } })
                             .contextMenu {
-                                Button("Edit YAML…") { edit("service/\(service.name)", service.namespace, model) }
+                                Button("Edit YAML") { edit("service/\(service.name)", service.namespace, model) }
                                 Button("Delete Service", role: .destructive) { pendingServiceDelete = service }
                             }
                     }
@@ -511,7 +511,7 @@ private struct WorkloadCard: View {
                     .disabled(busy)
                     .help(Glossary.rolloutRestart.text)
                 Menu {
-                    Button("Edit YAML…", action: onEdit)
+                    Button("Edit YAML", action: onEdit)
                     Divider()
                     Button("Delete", role: .destructive, action: onDelete)
                 } label: { Image(systemName: "ellipsis") }
@@ -770,7 +770,7 @@ private struct ConnectPopover: View {
             if let error {
                 Text(error).font(.caption).foregroundStyle(Tone.critical.text)
             }
-            Button("Save a Separate kubeconfig File…") { save() }
+            Button("Save a Separate kubeconfig File") { save() }
                 .buttonStyle(.link).font(.caption)
         }
         .padding(DS.Spacing.l)

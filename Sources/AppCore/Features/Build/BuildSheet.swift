@@ -139,7 +139,7 @@ struct BuildSheet: View {
         HStack {
             TextField(label, text: text, prompt: Text(placeholder))
                 .textFieldStyle(.roundedBorder)
-            Button("Choose…", action: choose)
+            Button("Choose", action: choose)
         }
     }
 }
@@ -229,7 +229,7 @@ struct BuildProgressView: View {
                     Spacer()
                     if let tag = model.builtTag {
                         if let onPush {
-                            Button { onPush(tag) } label: { Label("Push…", systemImage: "arrow.up.circle") }
+                            Button { onPush(tag) } label: { Label("Push", systemImage: "arrow.up.circle") }
                         }
                         if let onRun {
                             Button { onRun(tag) } label: { Label("Run", systemImage: "play.fill") }

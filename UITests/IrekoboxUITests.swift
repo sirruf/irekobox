@@ -44,8 +44,8 @@ final class IrekoboxUITests: XCTestCase {
     /// ⌘N opens the Run sheet; Run stays disabled without an image; Esc closes it.
     /// Nothing is started.
     func testRunSheetOpensAndCancels() throws {
-        // File › Run Container… is ⌘N; the menu works with any keyboard layout.
-        if !app.chooseMenuItem("File", "Run Container…") { app.typeKey("n", modifierFlags: .command) }
+        // File › Run Container is ⌘N; the menu works with any keyboard layout.
+        if !app.chooseMenuItem("File", "Run Container") { app.typeKey("n", modifierFlags: .command) }
         let sheet = app.descendants(matching: .any)["run.sheet"]
         XCTAssertTrue(sheet.waitForExistence(timeout: UI.timeout), "⌘N should open the Run sheet")
         XCTAssertFalse(app.buttons["run.submit"].isEnabled, "Run needs an image")
@@ -55,8 +55,8 @@ final class IrekoboxUITests: XCTestCase {
 
     /// ⌘K opens the command palette with its search focused; Esc closes it.
     func testCommandPaletteOpensAndCloses() throws {
-        // Edit › Find Anything… is ⌘K.
-        if !app.chooseMenuItem("Edit", "Find Anything…") { app.typeKey("k", modifierFlags: .command) }
+        // Edit › Find Anything is ⌘K.
+        if !app.chooseMenuItem("Edit", "Find Anything") { app.typeKey("k", modifierFlags: .command) }
         let palette = app.descendants(matching: .any)["palette"]
         XCTAssertTrue(palette.waitForExistence(timeout: UI.timeout), "⌘K should open the palette")
         XCTAssertTrue(app.descendants(matching: .any)["palette.search"].exists)
@@ -163,7 +163,7 @@ final class IrekoboxUITests: XCTestCase {
 
         // Open Build sheet, then Cancel (do NOT start a build).
         let build = app.descendants(matching: .any)["images.build"].firstMatch
-        XCTAssertTrue(build.waitForExistence(timeout: UI.timeout), "Build… toolbar button should exist")
+        XCTAssertTrue(build.waitForExistence(timeout: UI.timeout), "Build toolbar button should exist")
         build.click()
 
         let sheet = app.sheets.firstMatch

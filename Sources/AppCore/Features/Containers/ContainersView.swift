@@ -104,7 +104,7 @@ struct ContainersView: View {
                                            description: Text("“\(id)” no longer exists."))
                 }
             }
-            .searchable(text: $search, placement: .toolbar, prompt: "Name, image, port, project")
+            .searchable(text: $search, placement: .toolbar, prompt: "Name, image, port, compose project")
             .toolbar { toolbar(model) }
             .safeAreaInset(edge: .bottom, spacing: 0) { footer(model) }
             .inspector(isPresented: Binding(get: { layout == .table && inspectorShown && !selection.isEmpty },
@@ -192,7 +192,7 @@ struct ContainersView: View {
                 Text("\(group.running) of \(group.containers.count) up")
                     .font(.caption)
                     .foregroundStyle(group.running == group.containers.count ? Tone.positive.text : .secondary)
-                Button("Open project →") {
+                Button("Open compose project →") {
                     app.revealProject = project
                     app.section = .compose
                 }
@@ -202,7 +202,7 @@ struct ContainersView: View {
                 Text("machines, cluster nodes and the image builder").font(.caption).foregroundStyle(.secondary)
             } else {
                 Text("On their own").font(.headline)
-                Text("not part of a project").font(.caption).foregroundStyle(.secondary)
+                Text("not part of a compose project").font(.caption).foregroundStyle(.secondary)
             }
         }
         .accessibilityElement(children: .combine)
@@ -421,7 +421,7 @@ struct ContainersView: View {
         }
         ToolbarSpacer(.fixed, placement: .primaryAction)
         ToolbarItem(placement: .primaryAction) {
-            Button("Run Container…") { app.requestRun() }
+            Button { app.requestRun() } label: { ToolbarTitle("Run Container") }
             .buttonStyle(.borderedProminent)
             .help("Run a container (⌘N)")
             .accessibilityIdentifier("containers.run")

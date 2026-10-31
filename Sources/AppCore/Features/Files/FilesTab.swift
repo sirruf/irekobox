@@ -140,7 +140,7 @@ struct FilesTab: View {
             .accessibilityIdentifier("files.path")
 
             Spacer()
-            Button { choosingUpload = true } label: { Label("Upload…", systemImage: "square.and.arrow.up") }
+            Button { choosingUpload = true } label: { Label("Upload", systemImage: "square.and.arrow.up") }
                 .help("Copy files from your Mac into \(model.path) (or drop them here)")
             Button { Task { await model.load() } } label: { Image(systemName: "arrow.clockwise") }
                 .help("Refresh")

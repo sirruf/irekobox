@@ -120,7 +120,7 @@ struct ComposeMap: View {
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Project map")
+        .accessibilityLabel("Compose project map")
         .onAppear { placed = MapLayoutStore.load(project) }
         .onChange(of: arrangeRequest) { autoArrange() }
     }

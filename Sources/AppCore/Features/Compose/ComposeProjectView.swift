@@ -42,7 +42,7 @@ struct ComposeProjectView: View {
             if let project = model.project(named: name) {
                 content(project)
             } else {
-                ContentUnavailableView("Project Removed", systemImage: "square.stack.3d.up.slash",
+                ContentUnavailableView("Compose Project Removed", systemImage: "square.stack.3d.up.slash",
                                        description: Text("Its containers were removed."))
             }
         }
@@ -106,7 +106,7 @@ struct ComposeProjectView: View {
         }
         .confirmationDialog("Remove “\(project.name)” from Irekobox?", isPresented: $confirmRemoveProject,
                             titleVisibility: .visible) {
-            Button("Remove Project", role: .destructive) { Task { await model.remove(project); dismiss() } }
+            Button("Remove Compose Project", role: .destructive) { Task { await model.remove(project); dismiss() } }
         } message: {
             Text("Its containers are deleted. Volumes and the compose file stay.")
         }
@@ -253,7 +253,7 @@ struct ComposeProjectView: View {
                 Button("Remove Containers", role: .destructive) { confirmRemoveContainers = true }
                     .disabled(project.containers.isEmpty)
                 if project.isManagedHere {
-                    Button("Remove Project", role: .destructive) { confirmRemoveProject = true }
+                    Button("Remove Compose Project", role: .destructive) { confirmRemoveProject = true }
                 }
             } label: {
                 Label("More", systemImage: "ellipsis")
@@ -265,10 +265,10 @@ struct ComposeProjectView: View {
         if project.running > 0 {
             ToolbarSpacer(.fixed, placement: .primaryAction)
             ToolbarItemGroup(placement: .primaryAction) {
-                Button("Restart") { Task { await model.restart(project) } }
+                Button { Task { await model.restart(project) } } label: { ToolbarTitle("Restart") }
                     .help("Restart every service")
                     .disabled(busy)
-                Button("Stop") { Task { await model.stop(project) } }
+                Button { Task { await model.stop(project) } } label: { ToolbarTitle("Stop") }
                     .help("Stop every service")
                     .disabled(busy)
             }
@@ -276,7 +276,7 @@ struct ComposeProjectView: View {
         if project.containers.isEmpty || project.running < project.containers.count {
             ToolbarSpacer(.fixed, placement: .primaryAction)
             ToolbarItem(placement: .primaryAction) {
-                Button("Start") { Task { await model.start(project) } }
+                Button { Task { await model.start(project) } } label: { ToolbarTitle("Start") }
                     .help(project.isManagedHere ? "Start the services, creating any that don't exist yet"
                                                 : "Start the stopped services")
                     .buttonStyle(.borderedProminent)
@@ -325,12 +325,12 @@ struct ComposeFileTab: View {
             .toolbar {
                 if isDirty {
                     ToolbarItem(placement: .primaryAction) {
-                        Button("Revert") { drafts[path] = nil }
+                        Button { drafts[path] = nil } label: { ToolbarTitle("Revert") }
                     }
                     ToolbarSpacer(.fixed, placement: .primaryAction)
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    Button(applyTitle) { apply(path) }
+                    Button { apply(path) } label: { ToolbarTitle(applyTitle) }
                         .buttonStyle(.borderedProminent)
                         .keyboardShortcut(.return, modifiers: .command)
                         .disabled(!isValid || !isDirty || model.busy.contains(project.name))
@@ -608,7 +608,7 @@ public struct ComposeFileWindow: View {
             } else if model == nil || model?.projects.isEmpty == true {
                 ProgressView()
             } else {
-                ContentUnavailableView("No Project", systemImage: "doc.questionmark",
+                ContentUnavailableView("No Compose Project", systemImage: "doc.questionmark",
                                        description: name.map { Text("\($0) isn't on this Mac any more.") }
                                            ?? Text("This project isn't on this Mac any more."))
             }

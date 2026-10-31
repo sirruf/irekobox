@@ -4401,6 +4401,82 @@
         }
       }
     },
+    "%lld starters" : {
+      "localizations" : {
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld шаблон"
+                }
+              },
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld шаблона"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld шаблонов"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld шаблона"
+                }
+              }
+            }
+          }
+        },
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Vorlage"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Vorlagen"
+                }
+              }
+            }
+          }
+        },
+        "ja" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld 個のテンプレート"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld 个模板"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld stopped containers, %lld unused images. Volumes are kept." : {
       "localizations" : {
         "de" : {
@@ -7317,34 +7393,6 @@
         }
       }
     },
-    "Add Assistant…" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Assistent hinzufügen …"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "アシスタントを追加…"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Добавить ассистента…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "添加助手…"
-          }
-        }
-      }
-    },
     "Add Environment Variable" : {
       "localizations" : {
         "de" : {
@@ -7485,30 +7533,30 @@
         }
       }
     },
-    "Add a project folder or compose file" : {
+    "Add a compose project from its folder or compose file" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Projektordner oder Compose-Datei hinzufügen"
+            "value" : "Ein Compose-Projekt über seinen Ordner oder seine Compose-Datei hinzufügen"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "プロジェクトフォルダまたは Compose ファイルを追加"
+            "value" : "フォルダまたは compose ファイルから Compose プロジェクトを追加"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Добавьте папку проекта или файл Compose"
+            "value" : "Добавить проект Compose по папке или файлу compose"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "添加项目文件夹或 Compose 文件"
+            "value" : "通过文件夹或 compose 文件添加 Compose 项目"
           }
         }
       }
@@ -7851,6 +7899,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "全部 %lld 个"
+          }
+        }
+      }
+    },
+    "All Templates" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Все шаблоны"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle Vorlagen"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべてのテンプレート"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全部模板"
           }
         }
       }
@@ -8393,30 +8469,30 @@
         }
       }
     },
-    "Another image…" : {
+    "Another image" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Anderes Image …"
+            "value" : "Anderes Image"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ほかのイメージ…"
+            "value" : "ほかのイメージ"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Другой образ…"
+            "value" : "Другой образ"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "其他镜像…"
+            "value" : "其他镜像"
           }
         }
       }
@@ -8723,34 +8799,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "应用 YAML"
-          }
-        }
-      }
-    },
-    "Apply YAML…" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "YAML anwenden …"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "YAML を適用…"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Применить YAML…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "应用 YAML…"
           }
         }
       }
@@ -9204,6 +9252,34 @@
         }
       }
     },
+    "Back Up" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sichern"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "バックアップ"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Резервная копия"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "备份"
+          }
+        }
+      }
+    },
     "Back Up %@" : {
       "localizations" : {
         "de" : {
@@ -9296,66 +9372,30 @@
         }
       }
     },
-    "Back Up %lld Volumes…" : {
+    "Back Up All" : {
       "localizations" : {
         "de" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld Volume sichern …"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld Volumes sichern …"
-                }
-              }
-            }
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle sichern"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld 個のボリュームをバックアップ…"
+            "value" : "すべてをバックアップ"
           }
         },
         "ru" : {
-          "variations" : {
-            "plural" : {
-              "few" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Сохранить %lld тома…"
-                }
-              },
-              "many" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Сохранить %lld томов…"
-                }
-              },
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Сохранить %lld том…"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Сохранить %lld томов…"
-                }
-              }
-            }
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Резервные копии всех"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "备份 %lld 个卷…"
+            "value" : "全部备份"
           }
         }
       }
@@ -9388,58 +9428,30 @@
         }
       }
     },
-    "Back Up All…" : {
+    "Back Up First" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alle sichern …"
+            "value" : "Zuerst sichern"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "すべてをバックアップ…"
+            "value" : "先にバックアップ"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Резервные копии всех…"
+            "value" : "Сначала создать копию"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "全部备份…"
-          }
-        }
-      }
-    },
-    "Back Up First…" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zuerst sichern …"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "先にバックアップ…"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Сначала создать копию…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "先备份…"
+            "value" : "先备份"
           }
         }
       }
@@ -9468,34 +9480,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "备份到此处"
-          }
-        }
-      }
-    },
-    "Back Up…" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sichern …"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "バックアップ…"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Резервная копия…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "备份…"
           }
         }
       }
@@ -9640,6 +9624,35 @@
         }
       }
     },
+    "Basics" : {
+      "comment" : "Compose template group",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Основы"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grundlagen"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "基本"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "基础"
+          }
+        }
+      }
+    },
     "Being set up…" : {
       "localizations" : {
         "de" : {
@@ -9732,12 +9745,6 @@
     },
     "Bind mounts (host folders) aren't copied: mount the same folder with `-v`. A database that keeps its data right in that folder can't start from it, so move the data into a subfolder, mount the parent and point the data directory there (for Postgres, `PGDATA`). Only named volumes hold Docker-managed data and are listed below." : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Подключённые папки хоста (bind mounts) не копируются: подключите ту же папку с помощью `-v`. База данных, которая хранит данные прямо в этой папке, не сможет из неё запуститься, поэтому перенесите данные в подпапку, подключите родительскую папку и укажите каталог данных в подпапке (для Postgres — `PGDATA`). Данные под управлением Docker хранятся только в именованных томах; они перечислены ниже."
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -9748,6 +9755,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "バインドマウント（ホストのフォルダ）はコピーされません。同じフォルダを `-v` でマウントしてください。データをそのフォルダ直下に置くデータベースはそこから起動できないため、データをサブフォルダに移し、親フォルダをマウントして、データディレクトリをサブフォルダに向けてください（Postgres では `PGDATA`）。Docker が管理するデータを保持するのは名前付きボリュームだけで、以下に一覧表示されます。"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Подключённые папки хоста (bind mounts) не копируются: подключите ту же папку с помощью `-v`. База данных, которая хранит данные прямо в этой папке, не сможет из неё запуститься, поэтому перенесите данные в подпапку, подключите родительскую папку и укажите каталог данных в подпапке (для Postgres — `PGDATA`). Данные под управлением Docker хранятся только в именованных томах; они перечислены ниже."
           }
         },
         "zh-Hans" : {
@@ -10119,34 +10132,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "构建镜像。"
-          }
-        }
-      }
-    },
-    "Build…" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Erstellen …"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ビルド…"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Собрать…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "构建…"
           }
         }
       }
@@ -11143,34 +11128,6 @@
         }
       }
     },
-    "Check for Updates…" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nach Updates suchen …"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "アップデートを確認…"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Проверить обновления…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "检查更新…"
-          }
-        }
-      }
-    },
     "Check for container updates" : {
       "localizations" : {
         "de" : {
@@ -11311,6 +11268,34 @@
         }
       }
     },
+    "Checks that your sites are up and shows their status" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Проверяет, что сайты работают, и показывает их статус"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prüft, ob Ihre Websites erreichbar sind, und zeigt ihren Status"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サイトの稼働を確認して状態を表示"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "检查你的网站是否在线并显示状态"
+          }
+        }
+      }
+    },
     "Checkup" : {
       "localizations" : {
         "de" : {
@@ -11368,30 +11353,30 @@
         }
       }
     },
-    "Choose Where…" : {
+    "Choose Where" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Speicherort wählen …"
+            "value" : "Speicherort wählen"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "場所を選択…"
+            "value" : "場所を選択"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Выбрать место…"
+            "value" : "Выбрать место"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "选取位置…"
+            "value" : "选取位置"
           }
         }
       }
@@ -11508,30 +11493,30 @@
         }
       }
     },
-    "Clean Up…" : {
+    "Clean Up" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aufräumen …"
+            "value" : "Aufräumen"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "クリーンアップ…"
+            "value" : "クリーンアップ"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Очистить…"
+            "value" : "Очистить"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "清理…"
+            "value" : "清理"
           }
         }
       }
@@ -12152,6 +12137,34 @@
         }
       }
     },
+    "Compose Project Removed" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compose-Projekt entfernt"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compose プロジェクトを削除しました"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Проект Compose удалён"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compose 项目已移除"
+          }
+        }
+      }
+    },
     "Compose Watch settings. Not supported yet." : {
       "localizations" : {
         "de" : {
@@ -12260,6 +12273,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Compose 项目"
+          }
+        }
+      }
+    },
+    "Compose project map" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karte des Compose-Projekts"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compose プロジェクトのマップ"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Карта проекта Compose"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compose 项目图"
           }
         }
       }
@@ -12404,6 +12445,34 @@
         }
       }
     },
+    "Connect" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verbinden"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "接続"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Подключить"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "连接"
+          }
+        }
+      }
+    },
     "Connect kubectl" : {
       "localizations" : {
         "de" : {
@@ -12512,34 +12581,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "正在连接…"
-          }
-        }
-      }
-    },
-    "Connect…" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verbinden …"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "接続…"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Подключить…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "连接…"
           }
         }
       }
@@ -15897,6 +15938,7 @@
       }
     },
     "Data" : {
+      "comment" : "Compose template group",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -16252,7 +16294,7 @@
         }
       }
     },
-    "Delete %lld Volumes…" : {
+    "Delete %lld Volumes" : {
       "localizations" : {
         "de" : {
           "variations" : {
@@ -16260,13 +16302,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld Volume löschen …"
+                  "value" : "%lld Volume löschen"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld Volumes löschen …"
+                  "value" : "%lld Volumes löschen"
                 }
               }
             }
@@ -16275,7 +16317,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld 個のボリュームを削除…"
+            "value" : "%lld 個のボリュームを削除"
           }
         },
         "ru" : {
@@ -16284,25 +16326,25 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Удалить %lld тома…"
+                  "value" : "Удалить %lld тома"
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Удалить %lld томов…"
+                  "value" : "Удалить %lld томов"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Удалить %lld том…"
+                  "value" : "Удалить %lld том"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Удалить %lld томов…"
+                  "value" : "Удалить %lld томов"
                 }
               }
             }
@@ -16311,7 +16353,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "删除 %lld 个卷…"
+            "value" : "删除 %lld 个卷"
           }
         }
       }
@@ -17094,34 +17136,6 @@
         }
       }
     },
-    "Delete…" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Löschen …"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "削除…"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Удалить…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "删除…"
-          }
-        }
-      }
-    },
     "Deny" : {
       "localizations" : {
         "de" : {
@@ -17314,6 +17328,63 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "详细信息"
+          }
+        }
+      }
+    },
+    "Dev Services" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сервисы для разработки"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entwicklungsdienste"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開発用サービス"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开发服务"
+          }
+        }
+      }
+    },
+    "Develop" : {
+      "comment" : "Compose template group",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Разработка"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entwicklung"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開発"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开发"
           }
         }
       }
@@ -18498,6 +18569,34 @@
         }
       }
     },
+    "Edit" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bearbeiten"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "編集"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Редактировать"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "编辑"
+          }
+        }
+      }
+    },
     "Edit %@" : {
       "localizations" : {
         "de" : {
@@ -18526,58 +18625,58 @@
         }
       }
     },
-    "Edit YAML…" : {
+    "Edit YAML" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "YAML bearbeiten …"
+            "value" : "YAML bearbeiten"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "YAML を編集…"
+            "value" : "YAML を編集"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Редактировать YAML…"
+            "value" : "Редактировать YAML"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "编辑 YAML…"
+            "value" : "编辑 YAML"
           }
         }
       }
     },
-    "Edit as YAML…" : {
+    "Edit as YAML" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Als YAML bearbeiten …"
+            "value" : "Als YAML bearbeiten"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "YAML として編集…"
+            "value" : "YAML として編集"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Редактировать как YAML…"
+            "value" : "Редактировать как YAML"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "以 YAML 编辑…"
+            "value" : "以 YAML 编辑"
           }
         }
       }
@@ -18662,34 +18761,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已编辑"
-          }
-        }
-      }
-    },
-    "Edit…" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bearbeiten …"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "編集…"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Редактировать…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "编辑…"
           }
         }
       }
@@ -19562,6 +19633,34 @@
         }
       }
     },
+    "Export" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exportieren"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "書き出す"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Экспортировать"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导出"
+          }
+        }
+      }
+    },
     "Export %@ from Docker" : {
       "localizations" : {
         "de" : {
@@ -19614,34 +19713,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "导出 Docker 卷 %@"
-          }
-        }
-      }
-    },
-    "Export…" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Exportieren …"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "書き出す…"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Экспортировать…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "导出…"
           }
         }
       }
@@ -20038,30 +20109,30 @@
         }
       }
     },
-    "Find Anything…" : {
+    "Find Anything" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alles finden …"
+            "value" : "Alles finden"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "何でも検索…"
+            "value" : "何でも検索"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Найти всё…"
+            "value" : "Найти всё"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "查找任何内容…"
+            "value" : "查找任何内容"
           }
         }
       }
@@ -20470,30 +20541,30 @@
         }
       }
     },
-    "Folder on This Mac…" : {
+    "Folder on This Mac" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ordner auf diesem Mac …"
+            "value" : "Ordner auf diesem Mac"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "この Mac 上のフォルダ…"
+            "value" : "この Mac 上のフォルダ"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Папка на этом Mac…"
+            "value" : "Папка на этом Mac"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "这台 Mac 上的文件夹…"
+            "value" : "这台 Mac 上的文件夹"
           }
         }
       }
@@ -20584,12 +20655,6 @@
     },
     "Folders from this Mac are shared through virtiofs: inside them a container can change owners and permissions, but not on the shared folder itself. A database whose data directory is the shared folder itself, such as Postgres, fails to start. Share the folder one level up and point the data directory at a subfolder, for example `~/pg:/pg` with `PGDATA: /pg/data`." : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Папки с этого Mac подключаются через virtiofs: внутри них контейнер может менять владельца и права, но не у самой подключённой папки. База данных, у которой каталог данных — сама подключённая папка (например, Postgres), не запустится. Подключите папку уровнем выше и укажите каталог данных в подпапке, например `~/pg:/pg` и `PGDATA: /pg/data`."
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -20600,6 +20665,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "この Mac のフォルダは virtiofs で共有されます。その中ではコンテナが所有者や権限を変更できますが、共有フォルダ自体は変更できません。データディレクトリが共有フォルダそのものであるデータベース（Postgres など）は起動しません。フォルダを一つ上の階層で共有し、データディレクトリをサブフォルダに向けてください。例：`~/pg:/pg` と `PGDATA: /pg/data`。"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Папки с этого Mac подключаются через virtiofs: внутри них контейнер может менять владельца и права, но не у самой подключённой папки. База данных, у которой каталог данных — сама подключённая папка (например, Postgres), не запустится. Подключите папку уровнем выше и укажите каталог данных в подпапке, например `~/pg:/pg` и `PGDATA: /pg/data`."
           }
         },
         "zh-Hans" : {
@@ -20756,31 +20827,59 @@
         }
       }
     },
-    "Free %@…" : {
+    "Free %@" : {
       "comment" : "Button: free up disk space",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ freigeben …"
+            "value" : "%@ freigeben"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ を解放…"
+            "value" : "%@ を解放"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Освободить %@…"
+            "value" : "Освободить %@"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "释放 %@…"
+            "value" : "释放 %@"
+          }
+        }
+      }
+    },
+    "Free up disk space" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speicherplatz freigeben"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ディスクの空き領域を確保"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Освободить место на диске"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "释放磁盘空间"
           }
         }
       }
@@ -20809,34 +20908,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "要释放磁盘空间吗？"
-          }
-        }
-      }
-    },
-    "Free up disk space…" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Speicherplatz freigeben …"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ディスクの空き領域を確保…"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Освободить место на диске…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "释放磁盘空间…"
           }
         }
       }
@@ -21061,6 +21132,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ghost"
+          }
+        }
+      }
+    },
+    "Gitea" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gitea"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gitea"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gitea"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gitea"
           }
         }
       }
@@ -22550,30 +22649,30 @@
         }
       }
     },
-    "Import .env…" : {
+    "Import .env" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : ".env importieren …"
+            "value" : ".env importieren"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : ".env を読み込む…"
+            "value" : ".env を読み込む"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Импортировать .env…"
+            "value" : "Импортировать .env"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "导入 .env…"
+            "value" : "导入 .env"
           }
         }
       }
@@ -24327,6 +24426,62 @@
         }
       }
     },
+    "Jupyter" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jupyter"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jupyter"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jupyter"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jupyter"
+          }
+        }
+      }
+    },
+    "JupyterLab with NumPy, pandas and Matplotlib" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JupyterLab с NumPy, pandas и Matplotlib"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JupyterLab mit NumPy, pandas und Matplotlib"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "NumPy、pandas、Matplotlib 入りの JupyterLab"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "带 NumPy、pandas 和 Matplotlib 的 JupyterLab"
+          }
+        }
+      }
+    },
     "KEY" : {
       "localizations" : {
         "de" : {
@@ -24351,6 +24506,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "KEY"
+          }
+        }
+      }
+    },
+    "Kafka" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kafka"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kafka"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kafka"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kafka"
           }
         }
       }
@@ -26021,30 +26204,30 @@
         }
       }
     },
-    "Load Image…" : {
+    "Load Image" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Image laden …"
+            "value" : "Image laden"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "イメージを読み込む…"
+            "value" : "イメージを読み込む"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Загрузить образ…"
+            "value" : "Загрузить образ"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "载入镜像…"
+            "value" : "载入镜像"
           }
         }
       }
@@ -27255,6 +27438,34 @@
         }
       }
     },
+    "Metrics collected by Prometheus, drawn by Grafana, already connected" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Метрики собирает Prometheus, рисует Grafana — уже связаны"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prometheus sammelt Metriken, Grafana zeichnet sie – bereits verbunden"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prometheus が集め、Grafana が描くメトリクス。接続済み"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prometheus 采集指标，Grafana 绘图，已连接好"
+          }
+        }
+      }
+    },
     "Migrate" : {
       "localizations" : {
         "de" : {
@@ -27401,6 +27612,34 @@
         }
       }
     },
+    "MongoDB" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MongoDB"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MongoDB"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MongoDB"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MongoDB"
+          }
+        }
+      }
+    },
     "MongoDB 8, data in a named volume." : {
       "localizations" : {
         "de" : {
@@ -27425,6 +27664,63 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "MongoDB 8，数据存放在命名卷中。"
+          }
+        }
+      }
+    },
+    "MongoDB with mongo-express to browse it" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MongoDB и mongo-express для просмотра"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MongoDB mit mongo-express zum Durchsehen"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MongoDB と閲覧用の mongo-express"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MongoDB 及用于浏览的 mongo-express"
+          }
+        }
+      }
+    },
+    "Monitor" : {
+      "comment" : "Compose template group",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Мониторинг"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Überwachung"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "監視"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "监控"
           }
         }
       }
@@ -28271,30 +28567,30 @@
         }
       }
     },
-    "Name, image, port, project" : {
+    "Name, image, port, compose project" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Name, Image, Port, Projekt"
+            "value" : "Name, Image, Port, Compose-Projekt"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "名前、イメージ、ポート、プロジェクト"
+            "value" : "名前、イメージ、ポート、Compose プロジェクト"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Имя, образ, порт, проект"
+            "value" : "Имя, образ, порт, проект Compose"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "名称、镜像、端口、项目"
+            "value" : "名称、镜像、端口、Compose 项目"
           }
         }
       }
@@ -29033,34 +29329,6 @@
         }
       }
     },
-    "New Cluster…" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Neuer Cluster …"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "新規クラスタ…"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Новый кластер…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "新建集群…"
-          }
-        }
-      }
-    },
     "New Compose Project" : {
       "localizations" : {
         "de" : {
@@ -29117,34 +29385,6 @@
         }
       }
     },
-    "New Machine…" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Neue Maschine …"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "新規マシン…"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Новая машина…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "新建虚拟机…"
-          }
-        }
-      }
-    },
     "New Network" : {
       "localizations" : {
         "de" : {
@@ -29169,90 +29409,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "新建网络"
-          }
-        }
-      }
-    },
-    "New Network…" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Neues Netzwerk …"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "新規ネットワーク…"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Новая сеть…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "新建网络…"
-          }
-        }
-      }
-    },
-    "New Project" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Neues Projekt"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "新規プロジェクト"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Новый проект"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "新建项目"
-          }
-        }
-      }
-    },
-    "New Project…" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Neues Projekt …"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "新規プロジェクト…"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Новый проект…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "新建项目…"
           }
         }
       }
@@ -29337,34 +29493,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "新建卷"
-          }
-        }
-      }
-    },
-    "New Volume…" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Neues Volume …"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "新規ボリューム…"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Новый том…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "新建卷…"
           }
         }
       }
@@ -29509,6 +29637,34 @@
         }
       }
     },
+    "Nextcloud" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nextcloud"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nextcloud"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nextcloud"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nextcloud"
+          }
+        }
+      }
+    },
     "No Clusters" : {
       "localizations" : {
         "de" : {
@@ -29561,6 +29717,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "没有 Compose 文件"
+          }
+        }
+      }
+    },
+    "No Compose Project" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kein Compose-Projekt"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compose プロジェクトなし"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нет проекта Compose"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有 Compose 项目"
           }
         }
       }
@@ -29841,34 +30025,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "尚无输出"
-          }
-        }
-      }
-    },
-    "No Project" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kein Projekt"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "プロジェクトなし"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Нет проекта"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "没有项目"
           }
         }
       }
@@ -32630,6 +32786,34 @@
         }
       }
     },
+    "One Kafka broker without ZooKeeper, with Kafka UI" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Один брокер Kafka без ZooKeeper, с Kafka UI"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein Kafka-Broker ohne ZooKeeper, mit Kafka UI"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ZooKeeper なしの Kafka ブローカー 1 台と Kafka UI"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一个无需 ZooKeeper 的 Kafka broker，附 Kafka UI"
+          }
+        }
+      }
+    },
     "One app, isolated, from an image. A web server, a database, a tool." : {
       "localizations" : {
         "de" : {
@@ -33112,30 +33296,30 @@
         }
       }
     },
-    "Open File…" : {
+    "Open File" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Datei öffnen …"
+            "value" : "Datei öffnen"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ファイルを開く…"
+            "value" : "ファイルを開く"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Открыть файл…"
+            "value" : "Открыть файл"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "打开文件…"
+            "value" : "打开文件"
           }
         }
       }
@@ -33224,62 +33408,6 @@
         }
       }
     },
-    "Open Project" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Projekt öffnen"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "プロジェクトを開く"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Открыть проект"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "打开项目"
-          }
-        }
-      }
-    },
-    "Open Project…" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Projekt öffnen …"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "プロジェクトを開く…"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Открыть проект…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "打开项目…"
-          }
-        }
-      }
-    },
     "Open a terminal in any running container, in the window or its own." : {
       "localizations" : {
         "de" : {
@@ -33364,30 +33492,58 @@
         }
       }
     },
-    "Open compose.yaml…" : {
+    "Open compose project →" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "compose.yaml öffnen …"
+            "value" : "Compose-Projekt öffnen →"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "compose.yaml を開く…"
+            "value" : "Compose プロジェクトを開く →"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Открыть compose.yaml…"
+            "value" : "Открыть проект Compose →"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "打开 compose.yaml…"
+            "value" : "打开 Compose 项目 →"
+          }
+        }
+      }
+    },
+    "Open compose.yaml" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "compose.yaml öffnen"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "compose.yaml を開く"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Открыть compose.yaml"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开 compose.yaml"
           }
         }
       }
@@ -33588,34 +33744,6 @@
         }
       }
     },
-    "Open project →" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Projekt öffnen →"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "プロジェクトを開く →"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Открыть проект →"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "打开项目 →"
-          }
-        }
-      }
-    },
     "Open the manifests in the editor to change anything this form doesn't" : {
       "localizations" : {
         "de" : {
@@ -33784,30 +33912,30 @@
         }
       }
     },
-    "Opens at %@" : {
+    "Opens at" : {
       "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Открывается по адресу"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Öffnet unter %@"
+            "value" : "Öffnet unter"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ で開きます"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Открывается по адресу %@"
+            "value" : "開くアドレス"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "在 %@ 打开"
+            "value" : "打开地址"
           }
         }
       }
@@ -33864,34 +33992,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "选项"
-          }
-        }
-      }
-    },
-    "Or start from a template:" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Oder mit einer Vorlage beginnen:"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "またはテンプレートから始める:"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Или начните с шаблона:"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "或从模板开始："
           }
         }
       }
@@ -35446,6 +35546,34 @@
         }
       }
     },
+    "Postgres, Redis, a mail catcher and S3 storage for your app" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Postgres, Redis, перехват почты и S3 для вашего приложения"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Postgres, Redis, Mail-Fänger und S3-Speicher für Ihre App"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アプリ用の Postgres、Redis、メールキャッチャー、S3"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "为你的应用准备的 Postgres、Redis、邮件捕获和 S3"
+          }
+        }
+      }
+    },
     "Prepare %@: add systemd (once, about a minute)" : {
       "localizations" : {
         "de" : {
@@ -35586,90 +35714,6 @@
         }
       }
     },
-    "Project" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Projekt"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "プロジェクト"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Проект"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "项目"
-          }
-        }
-      }
-    },
-    "Project Removed" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Projekt entfernt"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "プロジェクトを削除しました"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Проект удалён"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "项目已移除"
-          }
-        }
-      }
-    },
-    "Project map" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Projektkarte"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "プロジェクトマップ"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Карта проекта"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "项目拓扑图"
-          }
-        }
-      }
-    },
     "Project name (default: the folder's name)." : {
       "localizations" : {
         "de" : {
@@ -35694,6 +35738,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "项目名称（默认：文件夹名称）。"
+          }
+        }
+      }
+    },
+    "Prometheus + Grafana" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prometheus + Grafana"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prometheus + Grafana"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prometheus + Grafana"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prometheus + Grafana"
           }
         }
       }
@@ -35890,34 +35962,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "拉取镜像"
-          }
-        }
-      }
-    },
-    "Pull Image…" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Image laden …"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "イメージをプル…"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Скачать образ…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "拉取镜像…"
           }
         }
       }
@@ -36283,34 +36327,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "推送会上传镜像，以便其他电脑或真实集群可以拉取它。"
-          }
-        }
-      }
-    },
-    "Push…" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Übertragen …"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "プッシュ…"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Отправить…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "推送…"
           }
         }
       }
@@ -37523,6 +37539,34 @@
         }
       }
     },
+    "Remove Compose Project" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compose-Projekt entfernen"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compose プロジェクトを削除"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Удалить проект Compose"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移除 Compose 项目"
+          }
+        }
+      }
+    },
     "Remove Containers" : {
       "localizations" : {
         "de" : {
@@ -37547,34 +37591,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "移除容器"
-          }
-        }
-      }
-    },
-    "Remove Project" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Projekt entfernen"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "プロジェクトを削除"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Удалить проект"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "移除项目"
           }
         }
       }
@@ -38023,34 +38039,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "重新命名“%@”"
-          }
-        }
-      }
-    },
-    "Rename…" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Umbenennen …"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "名前を変更…"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Переименовать…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "重新命名…"
           }
         }
       }
@@ -39035,34 +39023,6 @@
         }
       }
     },
-    "Run %@…" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ ausführen …"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ を実行…"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Запустить %@…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "运行 %@…"
-          }
-        }
-      }
-    },
     "Run Checkup" : {
       "localizations" : {
         "de" : {
@@ -39143,34 +39103,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "运行容器（已填写）"
-          }
-        }
-      }
-    },
-    "Run Container…" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Container ausführen …"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "コンテナを実行…"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Запустить контейнер…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "运行容器…"
           }
         }
       }
@@ -39367,34 +39299,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "运行应用"
-          }
-        }
-      }
-    },
-    "Run an App…" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "App ausführen …"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "App を実行…"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Запустить приложение…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "运行应用…"
           }
         }
       }
@@ -39847,6 +39751,34 @@
         }
       }
     },
+    "Runs" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Запускает"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Startet"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "実行するもの"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "运行内容"
+          }
+        }
+      }
+    },
     "Runs one pod on every node of the cluster. Used for helpers such as networking or log collection, not for your apps." : {
       "localizations" : {
         "de" : {
@@ -39871,34 +39803,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "在集群的每个节点上运行一个 Pod。用于网络或日志收集等辅助程序，而不是你的应用。"
-          }
-        }
-      }
-    },
-    "Run…" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ausführen …"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "実行…"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Запустить…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "运行…"
           }
         }
       }
@@ -40043,30 +39947,30 @@
         }
       }
     },
-    "Save a Separate kubeconfig File…" : {
+    "Save a Separate kubeconfig File" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Separate kubeconfig-Datei sichern …"
+            "value" : "Separate kubeconfig-Datei sichern"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "別の kubeconfig ファイルとして保存…"
+            "value" : "別の kubeconfig ファイルとして保存"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Сохранить отдельный файл kubeconfig…"
+            "value" : "Сохранить отдельный файл kubeconfig"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "存储单独的 kubeconfig 文件…"
+            "value" : "存储单独的 kubeconfig 文件"
           }
         }
       }
@@ -40833,6 +40737,35 @@
         }
       }
     },
+    "Self-Host" : {
+      "comment" : "Compose template group",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Свой сервер"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selbst hosten"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "セルフホスト"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自托管"
+          }
+        }
+      }
+    },
     "Send Traffic to Port %@" : {
       "localizations" : {
         "de" : {
@@ -41175,30 +41108,30 @@
         }
       }
     },
-    "Set Up…" : {
+    "Set Up" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Einrichten …"
+            "value" : "Einrichten"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "設定…"
+            "value" : "設定"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Настроить…"
+            "value" : "Настроить"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "设置…"
+            "value" : "设置"
           }
         }
       }
@@ -41339,34 +41272,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "保存在集群中供 Pod 读取的设置（文件或值），这样设置变更时无需更改镜像。"
-          }
-        }
-      }
-    },
-    "Settings…" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Einstellungen …"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "設定…"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Настройки…"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "设置…"
           }
         }
       }
@@ -43249,34 +43154,6 @@
         }
       }
     },
-    "Start Project" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Projekt starten"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "プロジェクトを起動"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Запустить проект"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "启动项目"
-          }
-        }
-      }
-    },
     "Start after these services; optionally wait until they're healthy." : {
       "localizations" : {
         "de" : {
@@ -44141,34 +44018,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "停止引擎"
-          }
-        }
-      }
-    },
-    "Stop Project" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Projekt stoppen"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "プロジェクトを停止"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Остановить проект"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "停止项目"
           }
         }
       }
@@ -47833,30 +47682,30 @@
         }
       }
     },
-    "Update to Irekobox %@…" : {
+    "Update to Irekobox %@" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Auf Irekobox %@ aktualisieren …"
+            "value" : "Auf Irekobox %@ aktualisieren"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Irekobox %@ にアップデート…"
+            "value" : "Irekobox %@ にアップデート"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Обновить до Irekobox %@…"
+            "value" : "Обновить до Irekobox %@"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "更新到 Irekobox %@…"
+            "value" : "更新到 Irekobox %@"
           }
         }
       }
@@ -47889,30 +47738,30 @@
         }
       }
     },
-    "Upload…" : {
+    "Upload" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hochladen …"
+            "value" : "Hochladen"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "アップロード…"
+            "value" : "アップロード"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Загрузить…"
+            "value" : "Загрузить"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "上传…"
+            "value" : "上传"
           }
         }
       }
@@ -47941,6 +47790,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "运行时间"
+          }
+        }
+      }
+    },
+    "Uptime Kuma" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uptime Kuma"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uptime Kuma"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uptime Kuma"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uptime Kuma"
           }
         }
       }
@@ -50149,6 +50026,34 @@
         }
       }
     },
+    "Workflows that connect apps and APIs" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сценарии, которые связывают приложения и API"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Workflows, die Apps und APIs verbinden"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アプリと API をつなぐワークフロー"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "连接应用和 API 的工作流"
+          }
+        }
+      }
+    },
     "Working directory" : {
       "localizations" : {
         "de" : {
@@ -50882,6 +50787,62 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "你自己的"
+          }
+        }
+      }
+    },
+    "Your own Git server with a Postgres database" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Свой Git-сервер с базой Postgres"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eigener Git-Server mit Postgres-Datenbank"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Postgres データベース付きの自分の Git サーバー"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自己的 Git 服务器，配 Postgres 数据库"
+          }
+        }
+      }
+    },
+    "Your own files, calendars and contacts, with MariaDB" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Свои файлы, календари и контакты, с MariaDB"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eigene Dateien, Kalender und Kontakte, mit MariaDB"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自分のファイル、カレンダー、連絡先（MariaDB 付き）"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自己的文件、日历和联系人，配 MariaDB"
           }
         }
       }
@@ -54246,6 +54207,34 @@
         }
       }
     },
+    "n8n" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "n8n"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "n8n"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "n8n"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "n8n"
+          }
+        }
+      }
+    },
     "needed" : {
       "localizations" : {
         "de" : {
@@ -54808,30 +54797,30 @@
         }
       }
     },
-    "not part of a project" : {
+    "not part of a compose project" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "gehört zu keinem Projekt"
+            "value" : "gehört zu keinem Compose-Projekt"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "プロジェクトに属していません"
+            "value" : "Compose プロジェクトに属していません"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "не входит в проект"
+            "value" : "не входит в проект Compose"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "不属于任何项目"
+            "value" : "不属于任何 Compose 项目"
           }
         }
       }
@@ -55289,6 +55278,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "或粘贴 docker run …"
+          }
+        }
+      }
+    },
+    "or start from a template" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "или начните с шаблона"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "oder mit einer Vorlage beginnen"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "またはテンプレートから始める"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "或从模板开始"
           }
         }
       }
@@ -56652,34 +56669,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "~/文件夹或卷"
-          }
-        }
-      }
-    },
-    "·" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "·"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "·"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "·"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "·"
           }
         }
       }

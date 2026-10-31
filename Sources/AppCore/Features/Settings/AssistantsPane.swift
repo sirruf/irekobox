@@ -58,7 +58,7 @@ struct AssistantsPane: View {
                 HStack {
                     Text("Another assistant? Add it with its own key:").foregroundStyle(.secondary)
                     Spacer()
-                    Button("Add Assistant…") { adding = true }.buttonStyle(.automatic)
+                    Button("Add Assistant") { adding = true }.buttonStyle(.automatic)
                     Button("Activity Log") { showLog = true }.buttonStyle(.automatic)
                 }
                 if let error {
@@ -108,7 +108,7 @@ struct AssistantsPane: View {
                     .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
                     .accessibilityLabel("More for \(client.name)")
             } else {
-                Button(stale ? "Reconnect" : "Connect…") { connect(client, replacing: assistant) }
+                Button(stale ? "Reconnect" : "Connect") { connect(client, replacing: assistant) }
                     .buttonStyle(.borderedProminent)
                     .help("Adds Irekobox to \(client.name)'s MCP servers with its own key")
             }

@@ -177,13 +177,13 @@ private struct CPULine: View {
     }
 }
 
-/// The dashed "Run Container…" card at the end of the list.
+/// The dashed "Run Container" card at the end of the list.
 struct RunContainerCard: View {
     let run: () -> Void
 
     var body: some View {
         VStack(spacing: DS.Spacing.xs + 2) {
-            Label("Run Container…", systemImage: "plus").font(.callout.weight(.semibold)).foregroundStyle(DS.accent)
+            Label("Run Container", systemImage: "plus").font(.callout.weight(.semibold)).foregroundStyle(DS.accent)
             Text("or paste a docker run command").font(.caption).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)

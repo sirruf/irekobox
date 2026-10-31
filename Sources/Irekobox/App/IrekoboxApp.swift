@@ -36,7 +36,7 @@ struct IrekoboxApp: App {
             CommandGroup(replacing: .appInfo) {
                 AboutMenuItem()
                 if appState.appUpdatesAvailable {
-                    Button("Check for Updates…") {
+                    Button("Check for Updates") {
                         Task { await appState.appUpdater.checkIfDue(force: true) }
                         appState.openSettings()
                     }

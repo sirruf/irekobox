@@ -41,7 +41,7 @@ struct ApplyYAMLSheet: View {
             }
             .font(.callout)
             HStack {
-                Button("Open File…") { open() }.buttonStyle(.automatic)
+                Button("Open File") { open() }.buttonStyle(.automatic)
                 Spacer()
                 Button("Cancel") { dismiss() }.buttonStyle(.automatic).keyboardShortcut(.cancelAction)
                 Button("Apply") {

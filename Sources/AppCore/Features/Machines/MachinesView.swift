@@ -37,7 +37,7 @@ struct MachinesView: View {
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button("New Machine…") { showCreate = true }
+                Button { showCreate = true } label: { ToolbarTitle("New Machine") }
                     .buttonStyle(.borderedProminent)
                     .help("Create a machine")
                     .accessibilityIdentifier("machines.new")
@@ -99,7 +99,7 @@ struct MachinesView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: DS.Spacing.l) {
                     leftoverPanel(model)
-                    Button("New Machine…") { showCreate = true }.buttonStyle(.borderedProminent)
+                    Button("New Machine") { showCreate = true }.buttonStyle(.borderedProminent)
                 }
                 .padding(DS.Spacing.l)
             }
@@ -109,7 +109,7 @@ struct MachinesView: View {
             } description: {
                 Text("A machine is a Linux VM with your account and your home folder, for working in a shell: install tools, build, run things by hand. Containers are still the way to run services.")
             } actions: {
-                Button("New Machine…") { showCreate = true }.buttonStyle(.borderedProminent)
+                Button("New Machine") { showCreate = true }.buttonStyle(.borderedProminent)
             }
         } else {
             ScrollView {
@@ -129,7 +129,7 @@ struct MachinesView: View {
                         }
                         Button { showCreate = true } label: {
                             VStack(spacing: DS.Spacing.xs) {
-                                Label("New Machine…", systemImage: "plus").font(.callout.weight(.semibold))
+                                Label("New Machine", systemImage: "plus").font(.callout.weight(.semibold))
                                 Text(verbatim: "Ubuntu, Debian, Fedora, Alpine").font(.caption).foregroundStyle(.secondary)
                             }
                             .frame(maxWidth: .infinity, minHeight: 96)
@@ -370,7 +370,7 @@ private struct MachineHero: View {
                 .help("container machine run -n \(machine.id), for Terminal")
             }
             HStack(spacing: DS.Spacing.s) {
-                Button("Rename…") { renaming = true }.disabled(busy)
+                Button("Rename") { renaming = true }.disabled(busy)
                 if machine.isRunning {
                     Button("Stop") { Task { await model.stop(machine.id) } }.disabled(busy)
                 } else {
@@ -379,7 +379,7 @@ private struct MachineHero: View {
                 }
                 if busy { ProgressView().controlSize(.small) }
                 Menu {
-                    Button("Settings…") { showSettings = true }
+                    Button("Settings") { showSettings = true }
                     Button("Show Log") { showLog = true }
                     if machine.default != true {
                         Button("Make Default") { Task { await model.makeDefault(machine.id) } }
@@ -766,7 +766,7 @@ struct NewMachineSheet: View {
                         .imageSuggestions(suggester)
                         .onChange(of: image) { _, value in suggester.suggest(value) }
                 } else {
-                    Button("Another image…") {
+                    Button("Another image") {
                         anotherImage = true
                         image = ""
                     }

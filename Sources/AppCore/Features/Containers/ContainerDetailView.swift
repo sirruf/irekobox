@@ -81,7 +81,7 @@ struct ContainerDetailView: View {
         }
         ToolbarItem(placement: .primaryAction) {
             Menu {
-                Button("Edit…") { editing = true }
+                Button("Edit") { editing = true }
                     .help("Change ports, volumes, environment and limits")
                     .accessibilityIdentifier("containerDetail.edit")
                 if current.state.isRunning {

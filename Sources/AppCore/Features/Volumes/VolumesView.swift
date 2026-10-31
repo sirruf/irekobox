@@ -201,7 +201,7 @@ struct VolumesView: View {
             presenting: pendingDelete
         ) { volume in
             // The safer way first: save it, then delete only if the save worked.
-            Button("Back Up First…") {
+            Button("Back Up First") {
                 pendingDelete = nil
                 if let model { backUp(volume, model, thenDelete: true) }
             }
@@ -217,7 +217,7 @@ struct VolumesView: View {
                             isPresented: Binding(get: { !pendingDeletes.isEmpty }, set: { if !$0 { pendingDeletes = [] } }),
                             titleVisibility: .visible) {
             // The safer way first: save them, then delete the ones saved.
-            Button("Back Up First…") {
+            Button("Back Up First") {
                 let volumes = pendingDeletes
                 pendingDeletes = []
                 if let model { backUp(volumes, model, thenDelete: true) }
@@ -261,7 +261,7 @@ struct VolumesView: View {
                     } description: {
                         Text("A volume appears when a container or compose project asks for one, or when you create it.")
                     } actions: {
-                        Button("New Volume…") { creating = true }
+                        Button("New Volume") { creating = true }
                     }
                     .accessibilityIdentifier("volumes.emptyState")
                 } else {
@@ -284,9 +284,9 @@ struct VolumesView: View {
         .overlay(alignment: .bottom) {
             if !selection.isEmpty {
                 SelectionBar(count: selection.count, onClear: { selection.clear() }) {
-                    Button("Back Up…") { backUp(selected(model), model) }
+                    Button("Back Up") { backUp(selected(model), model) }
                         .help("Save them as .tar.gz archives in a folder you choose")
-                    Button("Delete…", role: .destructive) { askToDelete(model) }
+                    Button("Delete", role: .destructive) { askToDelete(model) }
                 }
             } else if let notice = model.notice {
                 Label(notice, systemImage: "checkmark.circle.fill")
@@ -325,13 +325,13 @@ struct VolumesView: View {
             }
             ToolbarSpacer(.fixed, placement: .primaryAction)
             ToolbarItem(placement: .primaryAction) {
-                Button("Back Up All…") { backUpAll(model) }
+                Button { backUpAll(model) } label: { ToolbarTitle("Back Up All") }
                     .help("Save every volume as a .tar.gz archive in a folder you choose")
                     .disabled(model.volumes.isEmpty)
             }
             ToolbarSpacer(.fixed, placement: .primaryAction)
             ToolbarItem(placement: .primaryAction) {
-                Button("New Volume…") { creating = true }
+                Button { creating = true } label: { ToolbarTitle("New Volume") }
                     .buttonStyle(.borderedProminent)
                     .help("Create a volume")
                     .accessibilityIdentifier("volumes.new")
@@ -379,10 +379,10 @@ struct VolumesView: View {
                 Button("Browse Files") { browse(volume, through: browsable, model) }
                     .help(browsable.map { String(localized: "See its files through \($0.container.id), which mounts it at \($0.path)") }
                           ?? String(localized: "See its files (a small helper container opens it while you look)"))
-                Button("Back Up…") { backUp(volume, model) }
+                Button("Back Up") { backUp(volume, model) }
                     .help("Save it as a .tar.gz archive")
                 Spacer(minLength: 0)
-                Button("Delete…", role: .destructive) { pendingDelete = volume }
+                Button("Delete", role: .destructive) { pendingDelete = volume }
                     .foregroundStyle(Tone.critical.text)
                     .accessibilityLabel("Delete volume \(volume.name)")
             }
@@ -398,10 +398,10 @@ struct VolumesView: View {
                 NSPasteboard.general.setString("--volume \(volume.name):/data", forType: .string)
             }
             if selection.contains(volume.id) && selection.count > 1 {
-                Button("Back Up \(selection.count) Volumes…") { backUp(selected(model), model) }
-                Button("Delete \(selection.count) Volumes…", role: .destructive) { askToDelete(model) }
+                Button("Back Up \(selection.count) Volumes") { backUp(selected(model), model) }
+                Button("Delete \(selection.count) Volumes", role: .destructive) { askToDelete(model) }
             } else {
-                Button("Delete…", role: .destructive) { pendingDelete = volume }
+                Button("Delete", role: .destructive) { pendingDelete = volume }
             }
         }
         .accessibilityElement(children: .contain)

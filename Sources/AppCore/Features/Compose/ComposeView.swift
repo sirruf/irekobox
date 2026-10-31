@@ -25,13 +25,13 @@ struct ComposeView: View {
             .navigationSubtitle("Several containers from one compose.yaml, started together")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    Button("Open compose.yaml…") { importing = true }
-                        .help("Add a project folder or compose file")
+                    Button { importing = true } label: { ToolbarTitle("Open compose.yaml") }
+                        .help("Add a compose project from its folder or compose file")
                         .accessibilityIdentifier("stacks.add")
                 }
                 ToolbarSpacer(.fixed, placement: .primaryAction)
                 ToolbarItem(placement: .primaryAction) {
-                    Button("New Project…") { newProject = .web }
+                    Button { newProject = .web } label: { ToolbarTitle("New Compose Project") }
                         .buttonStyle(.borderedProminent)
                         .help("Make a folder with a starter compose.yaml and open it here")
                         .accessibilityIdentifier("compose.new")
@@ -108,7 +108,7 @@ struct ComposeView: View {
             } description: {
                 Text("Run `docker compose up` in a project folder and it shows up here, or open the folder to run it from Irekobox. You can also drop a folder or compose.yaml on this window.")
             } actions: {
-                Button("Open Project…") { importing = true }.buttonStyle(.borderedProminent)
+                Button("Open Compose Project") { importing = true }.buttonStyle(.borderedProminent)
             }
         } else {
             ScrollView {
@@ -130,32 +130,62 @@ struct ComposeView: View {
         }
     }
 
-    /// Where a compose file can be dropped or chosen.
+    /// Where a compose file can be dropped or chosen, and a few starters.
     private var addCard: some View {
-        HStack(spacing: DS.Spacing.l) {
-            Image(systemName: "plus").font(.title2).foregroundStyle(DS.accent).accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Drop a compose.yaml here").font(.callout.weight(.semibold)).foregroundStyle(DS.accent)
-                HStack(spacing: 4) {
-                    Text("Or start from a template:").foregroundStyle(.secondary)
-                    ForEach(ComposeTemplate.all.dropFirst()) { template in
-                        Button(template.title) { newProject = template }
-                            .buttonStyle(.link)
-                        if template != ComposeTemplate.all.last { Text("·").foregroundStyle(.tertiary) }
-                    }
+        VStack(alignment: .leading, spacing: DS.Spacing.m) {
+            HStack(spacing: DS.Spacing.l) {
+                Image(systemName: "plus").font(.title2).foregroundStyle(DS.accent).accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Drop a compose.yaml here").font(.callout.weight(.semibold)).foregroundStyle(DS.accent)
+                    Text("or start from a template").font(.callout).foregroundStyle(.secondary)
                 }
-                .font(.callout)
+                Spacer(minLength: 0)
             }
-            Spacer(minLength: 0)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: DS.Spacing.s)], spacing: DS.Spacing.s) {
+                ForEach(ComposeTemplate.featured) { template in
+                    starter(title: template.title, detail: template.category.title) {
+                        TemplateIcon(template: template, size: 28)
+                    } action: { newProject = template }
+                }
+                starter(title: String(localized: "All Templates"),
+                        detail: String(localized: "\(ComposeTemplate.all.count) starters")) {
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(DS.subtleFill)
+                        .frame(width: 28, height: 28)
+                        .overlay { Image(systemName: "square.grid.2x2").font(.system(size: 13, weight: .semibold)).foregroundStyle(.secondary) }
+                        .accessibilityHidden(true)
+                } action: { newProject = .web }
+                .accessibilityIdentifier("compose.allTemplates")
+            }
         }
         .padding(DS.Spacing.l)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: DS.Radius.panel)
-            .strokeBorder(DS.accent.opacity(dropTargeted ? 0.9 : 0.4), style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
+            .strokeBorder(DS.accent.opacity(dropTargeted ? 0.9 : 0.4), style: StrokeStyle(lineWidth: 1, dash: [6, 4])))
         .contentShape(RoundedRectangle(cornerRadius: DS.Radius.panel))
         .cardAction(cornerRadius: DS.Radius.panel) { importing = true }
-        .accessibilityLabel("Open Project")
+        .accessibilityLabel("Open Compose Project")
         .accessibilityIdentifier("compose.addCard")
+    }
+
+    /// One starter tile under the drop zone.
+    private func starter(title: String, detail: String, @ViewBuilder icon: () -> some View,
+                         action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: DS.Spacing.s) {
+                icon()
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(title).font(.callout.weight(.semibold)).lineLimit(1)
+                    Text(detail).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(DS.Spacing.s)
+            .background(RoundedRectangle(cornerRadius: DS.Radius.control + 2).fill(DS.raised))
+            .overlay(RoundedRectangle(cornerRadius: DS.Radius.control + 2).strokeBorder(DS.separator.opacity(0.6), lineWidth: 1))
+            .contentShape(RoundedRectangle(cornerRadius: DS.Radius.control + 2))
+        }
+        .buttonStyle(.plain)
     }
 
     @ViewBuilder

@@ -91,7 +91,7 @@ public struct StartProjectIntent: AppIntent {
     public static let title: LocalizedStringResource = "Start Compose Project"
     public static let description = IntentDescription("Starts every service of a compose project.")
 
-    @Parameter(title: "Project") public var project: ProjectEntity
+    @Parameter(title: "Compose Project") public var project: ProjectEntity
     @Dependency private var app: AppState
 
     public init() {}
@@ -113,7 +113,7 @@ public struct StopProjectIntent: AppIntent {
     public static let title: LocalizedStringResource = "Stop Compose Project"
     public static let description = IntentDescription("Stops every service of a compose project.")
 
-    @Parameter(title: "Project") public var project: ProjectEntity
+    @Parameter(title: "Compose Project") public var project: ProjectEntity
     @Dependency private var app: AppState
 
     public init() {}
@@ -132,7 +132,7 @@ public struct OpenProjectIntent: AppIntent {
     public static let title: LocalizedStringResource = "Open Compose Project"
     public static let openAppWhenRun = true
 
-    @Parameter(title: "Project") public var project: ProjectEntity
+    @Parameter(title: "Compose Project") public var project: ProjectEntity
     @Dependency private var app: AppState
 
     public init() {}

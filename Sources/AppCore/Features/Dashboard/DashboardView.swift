@@ -48,7 +48,7 @@ struct DashboardView: View {
         .navigationSubtitle(greeting)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button("Run Container…") { app.requestRun() }
+                Button { app.requestRun() } label: { ToolbarTitle("Run Container") }
                     .buttonStyle(.borderedProminent)
                     .help("Run a container (⌘N)")
             }
@@ -130,7 +130,7 @@ struct DashboardView: View {
                 .padding(.top, DS.Spacing.xs)
             } else if running.isEmpty {
                 HStack {
-                    Button("Run Container…") { app.requestRun() }
+                    Button("Run Container") { app.requestRun() }
                     Button("Go to Compose") { app.section = .compose }
                 }
                 .padding(.top, DS.Spacing.xs)
@@ -192,7 +192,7 @@ struct DashboardView: View {
                                  caption: reclaimable > 0 ? "Disk · \(Format.bytes(reclaimable)) to free" : "Disk",
                                  fraction: capacity > 0 ? Double(total) / Double(capacity) : 0, color: DS.disk)
             if reclaimable > 1_000_000_000 {
-                ring.cardAction(cornerRadius: DS.Radius.card) { confirmCleanup = true }.help("Free up disk space…")
+                ring.cardAction(cornerRadius: DS.Radius.card) { confirmCleanup = true }.help("Free up disk space")
             } else {
                 ring
             }
@@ -284,7 +284,7 @@ struct DashboardView: View {
             let reclaimable = df.images.reclaimableInBytes + df.containers.reclaimableInBytes + df.volumes.reclaimableInBytes
             if reclaimable > 1_000_000_000 {
                 notices.append(Notice(id: "reclaim", tone: .info, title: String(localized: "\(Format.bytes(reclaimable)) can be freed"),
-                                      message: cleanupMessage, actionTitle: String(localized: "Clean Up…"),
+                                      message: cleanupMessage, actionTitle: String(localized: "Clean Up"),
                                       action: { confirmCleanup = true }))
             }
         }

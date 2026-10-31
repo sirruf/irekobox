@@ -191,13 +191,13 @@ struct NetworksView: View {
         .errorToast(Binding(get: { model.error }, set: { model.error = $0 }))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button("Remove Unused") { confirmPrune = true }
+                Button { confirmPrune = true } label: { ToolbarTitle("Remove Unused") }
                     .help("Remove networks nothing is connected to")
                     .accessibilityIdentifier("networks.prune")
             }
             ToolbarSpacer(.fixed, placement: .primaryAction)
             ToolbarItem(placement: .primaryAction) {
-                Button("New Network…") { creating = true }
+                Button { creating = true } label: { ToolbarTitle("New Network") }
                     .buttonStyle(.borderedProminent)
                     .help("Create a network")
                     .accessibilityIdentifier("networks.new")

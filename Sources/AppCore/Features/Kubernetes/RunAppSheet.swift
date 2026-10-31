@@ -378,7 +378,7 @@ struct RunAppSheet: View {
                 Button { environment.append(EnvRow()) } label: { Label("Add Environment Variable", systemImage: "plus") }
                     .buttonStyle(.borderless)
                 Spacer()
-                Button("Edit as YAML…") { onEditYAML(previewDeployment.annotatedYAML); dismiss() }
+                Button("Edit as YAML") { onEditYAML(previewDeployment.annotatedYAML); dismiss() }
                     .buttonStyle(.link)
                     .help("Open the manifests in the editor to change anything this form doesn't")
             }

@@ -326,12 +326,12 @@ public struct NavigationCommands: Commands {
 
     public var body: some Commands {
         CommandGroup(replacing: .newItem) {
-            Button("Run Container…") { app.requestRun() }
+            Button("Run Container") { app.requestRun() }
                 .keyboardShortcut("n", modifiers: .command)
                 .disabled(!app.servicesRunning)
         }
         CommandGroup(after: .textEditing) {
-            Button("Find Anything…") { app.showPalette = true }
+            Button("Find Anything") { app.showPalette = true }
                 .keyboardShortcut("k", modifiers: .command)
                 .disabled(!app.servicesRunning)
         }

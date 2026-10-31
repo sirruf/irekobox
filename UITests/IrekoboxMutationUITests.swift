@@ -279,7 +279,7 @@ final class IrekoboxMutationUITests: XCTestCase {
         // .accessibilityElement(children: .contain) so child ids are preserved).
         app.descendants(matching: .any)["containerDetail.more"].firstMatch.click()
         let edit = app.descendants(matching: .any)["containerDetail.edit"].firstMatch
-        XCTAssertTrue(edit.waitForExistence(timeout: UI.timeout), "Edit… should be in the More menu")
+        XCTAssertTrue(edit.waitForExistence(timeout: UI.timeout), "Edit should be in the More menu")
         edit.click()
 
         // Sheet sections render with prefilled rows.

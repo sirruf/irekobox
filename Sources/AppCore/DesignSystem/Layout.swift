@@ -18,6 +18,20 @@ struct SectionHeader: View {
     }
 }
 
+/// A toolbar button's title with room at both ends: the glass capsule's own
+/// inset leaves the text almost touching its edges.
+struct ToolbarTitle: View {
+    let title: String
+
+    init(_ title: LocalizedStringResource) { self.title = String(localized: title) }
+    @_disfavoredOverload
+    init(_ title: String) { self.title = title }
+
+    var body: some View {
+        Text(title).padding(.horizontal, DS.Spacing.xs)
+    }
+}
+
 /// Label on the left, value on the right; monospaced values stay selectable.
 struct KeyValueRow: View {
     let key: String

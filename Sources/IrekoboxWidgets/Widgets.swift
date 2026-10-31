@@ -130,7 +130,7 @@ struct ProjectChoiceQuery: EntityQuery {
 
 struct ProjectConfiguration: WidgetConfigurationIntent {
     static let title: LocalizedStringResource = "Compose Project"
-    @Parameter(title: "Project") var project: ProjectChoice?
+    @Parameter(title: "Compose Project") var project: ProjectChoice?
 }
 
 struct ProjectProvider: AppIntentTimelineProvider {

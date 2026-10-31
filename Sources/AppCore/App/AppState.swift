@@ -30,7 +30,7 @@ public final class AppState {
     /// The last failed user action, shown as a toast (never swallowed).
     var actionError: String?
 
-    /// A Run sheet to show (⌘N, "Run…" on an image).
+    /// A Run sheet to show (⌘N, "Run" on an image).
     var runRequest: RunRequest?
     /// Latest apple/container release, for "update available".
     let updates = ContainerUpdateCheck()

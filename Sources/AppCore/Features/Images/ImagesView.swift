@@ -362,7 +362,7 @@ struct ImagesView: View {
                     }
                     Spacer(minLength: 0)
                     if total(unused) > 0 {
-                        Button(String(localized: "Free \(Format.bytes(total(unused)))…", comment: "Button: free up disk space")) { confirmPrune = true }
+                        Button(String(localized: "Free \(Format.bytes(total(unused)))", comment: "Button: free up disk space")) { confirmPrune = true }
                             .buttonStyle(.link)
                     }
                 }
@@ -462,8 +462,8 @@ struct ImagesView: View {
         .overlay(RoundedRectangle(cornerRadius: DS.Radius.panel)
             .strokeBorder(hasUpdate ? Tone.info.fill.opacity(0.5) : .clear, lineWidth: 1))
         .contextMenu {
-            Button("Run…") { app.requestRun(image: image.shortName) }
-            Button("Push…") { pushTarget = PushTarget(reference: image.reference) }
+            Button("Run") { app.requestRun(image: image.shortName) }
+            Button("Push") { pushTarget = PushTarget(reference: image.reference) }
             Divider()
             Button("Copy Reference") { copy(image.reference) }
             Button("Copy Digest") { copy(image.digest) }
@@ -526,26 +526,26 @@ struct ImagesView: View {
         }
         ToolbarSpacer(.fixed, placement: .primaryAction)
         ToolbarItemGroup(placement: .primaryAction) {
-            Button(freeTitle(model)) { confirmPrune = true }
+            Button { confirmPrune = true } label: { ToolbarTitle(freeTitle(model)) }
                 .help("Remove unused or dangling images")
                 .accessibilityIdentifier("images.prune")
-            Button("Build…") { showBuild = true }
+            Button { showBuild = true } label: { ToolbarTitle("Build") }
                 .help("Build an image from a folder with a Dockerfile")
                 .accessibilityIdentifier("images.build")
         }
         ToolbarSpacer(.fixed, placement: .primaryAction)
         ToolbarItem(placement: .primaryAction) {
-            Button("Pull Image…") { showPull = true }
+            Button { showPull = true } label: { ToolbarTitle("Pull Image") }
                 .buttonStyle(.borderedProminent)
                 .help("Download an image")
                 .accessibilityIdentifier("images.pull")
         }
     }
 
-    /// "Free 8 GB…" when unused images take space, else "Clean Up…".
+    /// "Free 8 GB…" when unused images take space, else "Clean Up".
     private func freeTitle(_ model: ImagesViewModel) -> String {
         let size = model.unused.map(\.totalSize).reduce(0, +)
-        return size > 0 ? String(localized: "Free \(Format.bytes(size))…", comment: "Button: free up disk space") : String(localized: "Clean Up…")
+        return size > 0 ? String(localized: "Free \(Format.bytes(size))", comment: "Button: free up disk space") : String(localized: "Clean Up")
     }
 
     private func pruneMessage(_ model: ImagesViewModel) -> String {

@@ -12,13 +12,13 @@ struct IrekoboxShortcuts: AppShortcutsProvider {
         AppShortcut(intent: StartProjectIntent(), phrases: [
             "Start \(\.$project) in \(.applicationName)",
             "Start compose project \(\.$project) with \(.applicationName)",
-        ], shortTitle: "Start Project", systemImageName: "play.fill")
+        ], shortTitle: "Start Compose Project", systemImageName: "play.fill")
         AppShortcut(intent: StopProjectIntent(), phrases: [
             "Stop \(\.$project) in \(.applicationName)",
-        ], shortTitle: "Stop Project", systemImageName: "stop.fill")
+        ], shortTitle: "Stop Compose Project", systemImageName: "stop.fill")
         AppShortcut(intent: OpenProjectIntent(), phrases: [
             "Open \(\.$project) in \(.applicationName)",
-        ], shortTitle: "Open Project", systemImageName: "square.stack.3d.up")
+        ], shortTitle: "Open Compose Project", systemImageName: "square.stack.3d.up")
         AppShortcut(intent: RestartContainerIntent(), phrases: [
             "Restart \(\.$container) in \(.applicationName)",
         ], shortTitle: "Restart Container", systemImageName: "arrow.clockwise")

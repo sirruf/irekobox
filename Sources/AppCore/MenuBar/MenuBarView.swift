@@ -39,7 +39,7 @@ public struct MenuBarView: View {
             Divider()
             if case .available(let appcast) = app.appUpdater.phase {
                 Button { openWindow(id: "about"); NSApplication.shared.activate() } label: {
-                    Label("Update to Irekobox \(appcast.version)…", systemImage: "arrow.down.circle")
+                    Label("Update to Irekobox \(appcast.version)", systemImage: "arrow.down.circle")
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .buttonStyle(.plain)
@@ -87,10 +87,10 @@ public struct MenuBarView: View {
                 Text(usageText).font(.caption).foregroundStyle(.secondary).monospacedDigit()
             }
             Menu {
-                Button("Find Anything…") { openMain(); app.showPalette = true }
+                Button("Find Anything") { openMain(); app.showPalette = true }
                     .disabled(!app.servicesRunning)
                 Button("Refresh") { app.requestRefresh() }
-                SettingsLink { Text("Settings…") }
+                SettingsLink { Text("Settings") }
                 Divider()
                 Button("Quit Irekobox") { NSApplication.shared.terminate(nil) }
             } label: { Image(systemName: "ellipsis.circle") }
@@ -278,7 +278,7 @@ public struct MenuBarView: View {
 
     private var footer: some View {
         HStack(spacing: DS.Spacing.s) {
-            Button { openMain(); app.requestRun() } label: { Text("Run Container…").frame(maxWidth: .infinity) }
+            Button { openMain(); app.requestRun() } label: { Text("Run Container").frame(maxWidth: .infinity) }
                 .disabled(!app.servicesRunning)
             Button { openMain() } label: { Text("Open Irekobox").frame(maxWidth: .infinity) }
         }
