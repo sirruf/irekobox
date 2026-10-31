@@ -547,6 +547,7 @@ private struct MachineTerminal: View {
                 } actions: {
                     Button("New Session") { ended = nil; sessionID = UUID() }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ContainerTerminalView(binaryPath: binaryPath, arguments: MachineRepository.shellArguments(machine.id),
                                       dark: embedded) { code in

@@ -455,7 +455,7 @@ public enum SystemAPI {
         var warnings: [String] = []
         let containers: [Container]
         do {
-            containers = try await backend.listContainers(all: true).filter { !$0.isSystem }
+            containers = try await backend.listContainers(all: true).filter { !$0.isEngineOwned }
         } catch {
             containers = []
             warnings.append("Containers unavailable: \(error.localizedDescription)")

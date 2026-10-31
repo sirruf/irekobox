@@ -128,7 +128,7 @@ public actor EventHub {
         var snapshot = old
         if let containers = try? await backend.listContainers(all: true) {
             snapshot.containers = [:]
-            for container in containers where !container.isSystem {
+            for container in containers where !container.isEngineOwned {
                 let id = DockerContainer.id(for: container)
                 snapshot.containers[id] = ContainerState(
                     id: id, name: DockerContainer.dockerName(for: container), image: ContainerModels.familiar(container.configuration.image.reference),

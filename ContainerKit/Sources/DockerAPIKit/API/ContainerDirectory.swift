@@ -73,7 +73,7 @@ public struct ContainerDirectory: Sendable {
     }
 
     public func all() async throws -> [DockerContainer] {
-        let containers = try await backend.listContainers(all: true).filter { !$0.isSystem }
+        let containers = try await backend.listContainers(all: true).filter { !$0.isEngineOwned }
         return await withTaskGroup(of: DockerContainer.self) { group in
             for container in containers {
                 group.addTask { await describe(container) }
@@ -87,7 +87,7 @@ public struct ContainerDirectory: Sendable {
 
     /// By full ID, unique ID prefix, name, or "/name".
     public func resolve(_ reference: String) async throws -> DockerContainer {
-        let containers = try await backend.listContainers(all: true).filter { !$0.isSystem }
+        let containers = try await backend.listContainers(all: true).filter { !$0.isEngineOwned }
         let name = reference.hasPrefix("/") ? String(reference.dropFirst()) : reference
         if let match = containers.first(where: { $0.id == name || DockerContainer.dockerName(for: $0) == name }) {
             return await describe(match)

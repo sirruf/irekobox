@@ -28,6 +28,22 @@ final class Fixtures161Tests: XCTestCase {
         XCTAssertFalse(try XCTUnwrap(containers.first { $0.id == "ib-fx-redis" }).isSystem)
     }
 
+    /// buildx's own BuildKit container: hidden in the app, still a Docker container.
+    func testBuildxBuilderIsSystemButNotEngineOwned() throws {
+        var json = String(decoding: try fixture("list-all"), as: UTF8.self)
+        json = json.replacingOccurrences(of: "ib-fx-stopped", with: "buildx_buildkit_irekobox")
+        let containers = try JSONDecoder().decode([Container].self, from: Data(json.utf8))
+        let stopped = try XCTUnwrap(containers.first { $0.id == "buildx_buildkit_irekobox" })
+        XCTAssertFalse(stopped.isBuildxBuilder, "only from moby/buildkit")
+
+        json = json.replacingOccurrences(of: "docker.io/library/alpine:latest", with: "docker.io/moby/buildkit:buildx-stable-1")
+        let builder = try XCTUnwrap(try JSONDecoder().decode([Container].self, from: Data(json.utf8))
+            .first { $0.id == "buildx_buildkit_irekobox" })
+        XCTAssertTrue(builder.isBuildxBuilder)
+        XCTAssertTrue(builder.isSystem)
+        XCTAssertFalse(builder.isEngineOwned)
+    }
+
     func testRunningContainerInspect() throws {
         let c = try XCTUnwrap(decode([Container].self, "inspect-running").first)
         XCTAssertEqual(c.state, .running)

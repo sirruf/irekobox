@@ -54,32 +54,37 @@ struct ConsoleTab: View {
         VStack(spacing: 0) {
             header
             Divider()
-            if !container.state.isRunning {
-                ContentUnavailableView("Container Not Running", systemImage: "pause.circle",
-                                       description: Text("Start the container to open a shell."))
-            } else if let exit = ended {
-                ContentUnavailableView {
-                    Label("Session ended", systemImage: "terminal")
-                } description: {
-                    if let code = exit {
-                        Text("The shell exited with code \(String(code)).")
-                    } else {
-                        Text("The shell exited.")
+            Group {
+                if !container.state.isRunning {
+                    ContentUnavailableView("Container Not Running", systemImage: "pause.circle",
+                                           description: Text("Start the container to open a shell."))
+                } else if let exit = ended {
+                    ContentUnavailableView {
+                        Label("Session ended", systemImage: "terminal")
+                    } description: {
+                        if let code = exit {
+                            Text("The shell exited with code \(String(code)).")
+                        } else {
+                            Text("The shell exited.")
+                        }
+                    } actions: {
+                        Button("Reconnect") { reconnect() }.buttonStyle(.borderedProminent)
                     }
-                } actions: {
-                    Button("Reconnect") { reconnect() }.buttonStyle(.borderedProminent)
+                    .accessibilityIdentifier("console.ended")
+                } else if hasActivated {
+                    ContainerTerminalView(binaryPath: Settings.shared.binaryPath,
+                                          arguments: shell.arguments(containerID: container.id),
+                                          onExit: { code in ended = .some(code) })
+                        .id(session)   // a new session per shell change / reconnect
+                        .accessibilityIdentifier("console.terminal")
+                } else {
+                    ContentUnavailableView("Console", systemImage: "terminal",
+                                           description: Text("Opens a shell when you switch to this tab."))
                 }
-                .accessibilityIdentifier("console.ended")
-            } else if hasActivated {
-                ContainerTerminalView(binaryPath: Settings.shared.binaryPath,
-                                      arguments: shell.arguments(containerID: container.id),
-                                      onExit: { code in ended = .some(code) })
-                    .id(session)   // a new session per shell change / reconnect
-                    .accessibilityIdentifier("console.terminal")
-            } else {
-                ContentUnavailableView("Console", systemImage: "terminal",
-                                       description: Text("Opens a shell when you switch to this tab."))
             }
+            // The space under the header, whatever is in it: a message alone
+            // doesn't fill it, and the header would then drift to the middle.
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .onAppear { if isActive { hasActivated = true } }
         .onChange(of: isActive) { _, active in if active { hasActivated = true } }

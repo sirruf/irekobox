@@ -59,6 +59,7 @@ public struct TerminalWindow: View {
                             Button("Reconnect") { reconnect() }.buttonStyle(.borderedProminent)
                         }
                         .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else {
                         ContainerTerminalView(binaryPath: Settings.shared.binaryPath, arguments: target.arguments, dark: true,
                                               onExit: { code in dropped(code) })

@@ -190,9 +190,21 @@ public extension Container {
     /// builder (a `com.apple.container.resource.role` label) and the
     /// containers that run container machines (shown as machines instead),
     /// and Irekobox's own short-lived helpers (volume backups and browsing).
-    var isSystem: Bool {
+    /// Docker clients never see these.
+    var isEngineOwned: Bool {
         configuration.labels["com.apple.container.resource.role"] != nil || isMachine
             || configuration.labels["com.irekobox.helper"] != nil
+    }
+
+    /// Not the user's own work: what ``isEngineOwned`` covers, plus the
+    /// BuildKit containers `docker buildx` starts for itself. Docker clients
+    /// do see those (buildx finds its builder by name), the app hides them.
+    var isSystem: Bool { isEngineOwned || isBuildxBuilder }
+
+    /// `buildx_buildkit_<builder>` from `moby/buildkit`, buildx's
+    /// docker-container driver.
+    var isBuildxBuilder: Bool {
+        id.hasPrefix("buildx_buildkit_") && configuration.image.reference.contains("moby/buildkit")
     }
 
     /// Runs a container machine (`container machine`).

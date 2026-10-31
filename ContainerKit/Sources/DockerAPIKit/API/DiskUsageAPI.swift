@@ -50,7 +50,7 @@ public enum DiskUsageAPI {
         func wanted(_ type: String) -> Bool { types.isEmpty || types.contains(type) }
         let legacy = request.apiVersion < DockerAPIVersion.Version(1, 52)
         let verbose = request.bool("verbose") || legacy
-        let containers = try await backend.listContainers(all: true).filter { !$0.isSystem }
+        let containers = try await backend.listContainers(all: true).filter { !$0.isEngineOwned }
 
         var imageUsage: Usage<ImageItem>?
         var imageItems: [ImageItem]?

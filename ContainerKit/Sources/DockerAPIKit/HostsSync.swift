@@ -74,7 +74,7 @@ public actor HostsSync {
     private func round() async {
         guard let containers = try? await backend.listContainers(all: false) else { return }
         let running = containers.filter { $0.state.isRunning }
-        let files = Self.files(for: running.filter { !$0.isSystem }) + Self.machineFiles(for: running)
+        let files = Self.files(for: running.filter { !$0.isEngineOwned }) + Self.machineFiles(for: running)
         var live: Set<String> = []
         var changed: [(key: String, container: Container, content: String)] = []
         for (container, content) in files {
