@@ -49,6 +49,8 @@ public protocol DockerBackend: Sendable {
     func deleteNetwork(_ name: String) async throws
     /// See `ContainerEngine.supportsVolumeSync`.
     func supportsVolumeSync() async -> Bool
+    /// `container registry login`: checks the credentials and stores them.
+    func registryLogin(server: String, username: String, password: String) async throws
 }
 
 /// Test stubs needn't implement what their tests don't reach.
@@ -63,6 +65,9 @@ extension DockerBackend {
     public func createNetwork(_ spec: NetworkSpec) async throws { throw DockerAPIError(501, "networks not available") }
     public func deleteNetwork(_ name: String) async throws { throw DockerAPIError(501, "networks not available") }
     public func supportsVolumeSync() async -> Bool { false }
+    public func registryLogin(server: String, username: String, password: String) async throws {
+        throw DockerAPIError(501, "registry logins not available")
+    }
 }
 
 /// Adapts a `ContainerEngine` to `DockerBackend`.
@@ -153,6 +158,9 @@ public struct EngineBackend: DockerBackend {
     public func createNetwork(_ spec: NetworkSpec) async throws { try await engine.createNetwork(spec) }
     public func supportsVolumeSync() async -> Bool { await engine.supportsVolumeSync() }
     public func deleteNetwork(_ name: String) async throws { try await engine.deleteNetwork(name) }
+    public func registryLogin(server: String, username: String, password: String) async throws {
+        try await engine.registryLogin(server: server, username: username, password: password, scheme: .auto)
+    }
 }
 
 /// Listing images is slow (`container image ls` reads every image's size: a
@@ -238,7 +246,7 @@ public struct DockerHostInfo: Sendable {
     }
 }
 
-/// `/_ping`, `/version`, `/info`.
+/// `/_ping`, `/version`, `/info`, `/auth`.
 public enum SystemAPI {
     /// The Docker Engine release line whose API we implement. Some tools gate
     /// features on `Version` as if it were Docker's; the real components are
@@ -250,6 +258,7 @@ public enum SystemAPI {
         router.add("HEAD", "/_ping") { _ in ping() }
         router.add("GET", "/version") { _ in await version(backend: backend, host: host) }
         router.add("GET", "/info") { _ in await info(backend: backend, host: host) }
+        router.add("POST", "/auth") { request in await respond { try await auth(request, backend) } }
 
         // Swarm and managed plugins don't exist here; answer like a standalone
         // Docker Engine so tools treat this as a non-swarm host.
@@ -268,6 +277,49 @@ public enum SystemAPI {
                                             ("Pragma", "no-cache"),
                                             ("Builder-Version", "1")],
                      body: .data(Data("OK".utf8)))
+    }
+
+    // MARK: - /auth
+
+    struct AuthRequest: Decodable {
+        let username: String?
+        let password: String?
+        let serveraddress: String?
+        let identitytoken: String?
+    }
+
+    struct AuthResponse: Encodable {
+        let Status = "Login Succeeded"
+        let IdentityToken = ""
+    }
+
+    /// `docker login`: the credentials go to `container registry login`, so
+    /// pulls and pushes through `container` use them too.
+    static func auth(_ request: DockerRequest, _ backend: DockerBackend) async throws -> HTTPResponse {
+        guard let body = try? JSONDecoder().decode(AuthRequest.self, from: request.http.body) else {
+            throw DockerAPIError.badParameter("invalid JSON in the login request")
+        }
+        guard let username = body.username, !username.isEmpty, let password = body.password, !password.isEmpty else {
+            throw DockerAPIError.badParameter(body.identitytoken?.isEmpty == false
+                ? "Login with an identity token isn't supported by Irekobox; use a username and password or access token."
+                : "a username and password are required")
+        }
+        let server = registryHost(body.serveraddress)
+        do {
+            try await backend.registryLogin(server: server, username: username, password: password)
+        } catch EngineError.commandFailed(_, let message) {
+            throw DockerAPIError(401, "login to \(server) failed: \(message.trimmingCharacters(in: .whitespacesAndNewlines))")
+        }
+        return .json(AuthResponse())
+    }
+
+    /// Docker clients send `https://index.docker.io/v1/` for Docker Hub and a
+    /// bare or schemed host otherwise; `container` names Docker Hub `docker.io`.
+    static func registryHost(_ address: String?) -> String {
+        var host = (address ?? "").trimmingCharacters(in: .whitespaces)
+        if let scheme = host.range(of: "://") { host = String(host[scheme.upperBound...]) }
+        host = String(host.prefix { $0 != "/" })
+        return ["", "index.docker.io", "registry-1.docker.io"].contains(host) ? "docker.io" : host
     }
 
     // MARK: - /version

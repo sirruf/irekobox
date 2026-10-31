@@ -52,6 +52,7 @@ public struct BuildRepository: Sendable {
 
     /// `container image push --progress plain <reference>`.
     public func push(_ reference: String) -> AsyncThrowingStream<String, Error> {
-        stream.lines(["image", "push", "--progress", "plain", reference], mergeStderr: true)
+        stream.lines(["image", "push", "--progress", "plain"] + InsecureRegistries.schemeArguments(reference: reference)
+                     + [reference], mergeStderr: true)
     }
 }

@@ -12,9 +12,9 @@ public struct ImageRepository: Sendable {
         try await cli.decode([ContainerImage].self, ["image", "ls", "--format", "json"])
     }
 
-    /// `container image pull <reference>`.
+    /// `container image pull <reference>` (over HTTP for an insecure registry).
     public func pull(_ reference: String) async throws {
-        try await cli.run(["image", "pull", reference])
+        try await cli.run(["image", "pull"] + InsecureRegistries.schemeArguments(reference: reference) + [reference])
     }
 
     /// `container image delete [--force] <reference>`.

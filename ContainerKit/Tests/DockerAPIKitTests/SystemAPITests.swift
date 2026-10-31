@@ -10,6 +10,15 @@ private struct StubBackend: DockerBackend {
     """
     var containers: [Container] = []
     var images: [ContainerImage] = []
+    var logins = Logins()
+    var loginError: Error?
+
+    final class Logins: @unchecked Sendable { var calls: [(server: String, username: String, password: String)] = [] }
+
+    func registryLogin(server: String, username: String, password: String) async throws {
+        if let loginError { throw loginError }
+        logins.calls.append((server, username, password))
+    }
 
     func systemStatus() async throws -> SystemStatus? { status }
     func systemProperties() async throws -> String { properties }
@@ -130,5 +139,43 @@ final class SystemAPITests: XCTestCase {
         XCTAssertEqual(install.status, 501)
         let swarmish = await api.handle(HTTPRequest(method: "GET", target: "/swarming"))
         XCTAssertEqual(swarmish.status, 404, "a prefix matches whole segments only")
+    }
+
+    private func login(_ backend: StubBackend, _ body: String) async -> HTTPResponse {
+        await router(backend).handle(HTTPRequest(method: "POST", target: "/v1.44/auth", body: Data(body.utf8)))
+    }
+
+    func testLoginStoresTheCredentialsWithContainer() async throws {
+        let backend = StubBackend()
+        let hub = await login(backend, #"{"username":"me","password":"pat","serveraddress":"https://index.docker.io/v1/"}"#)
+        XCTAssertEqual(hub.status, 200)
+        XCTAssertEqual(try json(hub)["Status"] as? String, "Login Succeeded")
+        let own = await login(backend, #"{"username":"me","password":"s3cret","serveraddress":"https://server:5000"}"#)
+        XCTAssertEqual(own.status, 200)
+        XCTAssertEqual(backend.logins.calls.map(\.server), ["docker.io", "server:5000"])
+        XCTAssertEqual(backend.logins.calls.last?.password, "s3cret")
+    }
+
+    func testRegistryHost() {
+        XCTAssertEqual(SystemAPI.registryHost(nil), "docker.io")
+        XCTAssertEqual(SystemAPI.registryHost("registry-1.docker.io"), "docker.io")
+        XCTAssertEqual(SystemAPI.registryHost("rg.example.com"), "rg.example.com")
+        XCTAssertEqual(SystemAPI.registryHost("http://localhost:5000/v2/"), "localhost:5000")
+    }
+
+    func testLoginRefusedByTheRegistryIsUnauthorized() async throws {
+        var backend = StubBackend()
+        backend.loginError = EngineError.commandFailed(exitCode: 1, message: "Error: unauthorized\n")
+        let response = await login(backend, #"{"username":"me","password":"wrong","serveraddress":"rg.example.com"}"#)
+        XCTAssertEqual(response.status, 401)
+        XCTAssertEqual(try json(response)["message"] as? String, "login to rg.example.com failed: Error: unauthorized")
+    }
+
+    func testLoginNeedsAPassword() async throws {
+        let backend = StubBackend()
+        let token = await login(backend, #"{"username":"me","identitytoken":"tok","serveraddress":"rg.example.com"}"#)
+        XCTAssertEqual(token.status, 400)
+        XCTAssertTrue(try XCTUnwrap(json(token)["message"] as? String).contains("identity token"))
+        XCTAssertTrue(backend.logins.calls.isEmpty)
     }
 }

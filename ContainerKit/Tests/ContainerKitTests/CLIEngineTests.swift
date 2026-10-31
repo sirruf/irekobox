@@ -87,6 +87,15 @@ final class CLIEngineTests: XCTestCase {
         XCTAssertEqual(cli.inputs, [Data("s3cret\n".utf8)])
     }
 
+    func testLoopbackRegistriesGoOverHTTP() async throws {
+        try await engine.registryLogin(server: "localhost:5000", username: "me", password: "pw", scheme: .auto)
+        try await engine.pullImage("127.0.0.1:5000/app:1")
+        XCTAssertEqual(cli.calls, [
+            ["registry", "login", "localhost:5000", "--username", "me", "--password-stdin", "--scheme", "http"],
+            ["image", "pull", "--scheme", "http", "127.0.0.1:5000/app:1"],
+        ])
+    }
+
     func testStoppedServicesMeanNilStatus() async throws {
         cli.error = .servicesNotRunning
         let status = try await engine.systemStatus()

@@ -127,6 +127,7 @@ public struct CLIEngine: ContainerEngine {
     public func pullImageWithProgress(_ reference: String, platform: String?) -> AsyncThrowingStream<String, Error> {
         var arguments = ["image", "pull", "--progress", "plain"]
         if let platform { arguments += ["--platform", platform] }
+        arguments += InsecureRegistries.schemeArguments(reference: reference)
         return stream.lines(arguments + [reference], mergeStderr: true)
     }
     public func buildImage(_ options: BuildOptions) -> AsyncThrowingStream<String, Error> { builds.build(options) }

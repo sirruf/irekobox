@@ -17,11 +17,16 @@ public struct RegistryRepository: Sendable {
         try await cli.decode([RegistryLogin].self, ["registry", "ls", "--format", "json"])
     }
 
-    /// `container registry login <server> -u <user> --password-stdin [--scheme]`.
+    /// `container registry login <server> -u <user> --password-stdin [--scheme]`;
+    /// `.auto` means HTTP for an insecure registry (see ``InsecureRegistries``).
     /// The password is sent via stdin, never as an argument.
     public func login(server: String, username: String, password: String, scheme: Scheme = .auto) async throws {
         var arguments = ["registry", "login", server, "--username", username, "--password-stdin"]
-        if scheme != .auto { arguments += ["--scheme", scheme.rawValue] }
+        if scheme != .auto {
+            arguments += ["--scheme", scheme.rawValue]
+        } else {
+            arguments += InsecureRegistries.schemeArguments(host: server)
+        }
         let secret = Data((password + "\n").utf8)
         try await cli.run(arguments, input: secret)
     }
