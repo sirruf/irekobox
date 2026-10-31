@@ -9730,30 +9730,30 @@
         }
       }
     },
-    "Bind mounts (host folders) need no migration — mount the same host path with `-v`. Only named volumes hold Docker-managed data and are listed below." : {
+    "Bind mounts (host folders) aren't copied: mount the same folder with `-v`. A database that keeps its data right in that folder can't start from it, so move the data into a subfolder, mount the parent and point the data directory there (for Postgres, `PGDATA`). Only named volumes hold Docker-managed data and are listed below." : {
       "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Подключённые папки хоста (bind mounts) не копируются: подключите ту же папку с помощью `-v`. База данных, которая хранит данные прямо в этой папке, не сможет из неё запуститься, поэтому перенесите данные в подпапку, подключите родительскую папку и укажите каталог данных в подпапке (для Postgres — `PGDATA`). Данные под управлением Docker хранятся только в именованных томах; они перечислены ниже."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bind-Mounts (Ordner des Hosts) müssen nicht migriert werden — binden Sie denselben Host-Pfad mit `-v` ein. Nur benannte Volumes enthalten von Docker verwaltete Daten; sie sind unten aufgeführt."
+            "value" : "Bind-Mounts (Ordner des Hosts) werden nicht kopiert: Binde denselben Ordner mit `-v` ein. Eine Datenbank, die ihre Daten direkt in diesem Ordner hält, kann daraus nicht starten. Verschiebe die Daten deshalb in einen Unterordner, binde den übergeordneten Ordner ein und richte das Datenverzeichnis auf den Unterordner (bei Postgres `PGDATA`). Nur benannte Volumes enthalten von Docker verwaltete Daten; sie sind unten aufgeführt."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "バインドマウント（ホストのフォルダ）は移行不要です。`-v` で同じホストパスをマウントしてください。Docker が管理するデータを保持しているのは名前付きボリュームだけで、以下に一覧表示されます。"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Подключённые папки хоста (bind mounts) не нужно переносить — подключите тот же путь хоста с помощью `-v`. Данные под управлением Docker хранятся только в именованных томах; они перечислены ниже."
+            "value" : "バインドマウント（ホストのフォルダ）はコピーされません。同じフォルダを `-v` でマウントしてください。データをそのフォルダ直下に置くデータベースはそこから起動できないため、データをサブフォルダに移し、親フォルダをマウントして、データディレクトリをサブフォルダに向けてください（Postgres では `PGDATA`）。Docker が管理するデータを保持するのは名前付きボリュームだけで、以下に一覧表示されます。"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "绑定挂载（主机文件夹）无需迁移，使用 `-v` 挂载相同的主机路径即可。只有命名卷存放由 Docker 管理的数据，它们列在下方。"
+            "value" : "绑定挂载（主机文件夹）不会被复制：用 `-v` 挂载同一个文件夹即可。数据直接存放在该文件夹中的数据库无法从中启动，因此请把数据移到子文件夹，挂载父文件夹，并将数据目录指向该子文件夹（Postgres 用 `PGDATA`）。只有命名卷保存由 Docker 管理的数据，它们列在下方。"
           }
         }
       }
@@ -16016,12 +16016,6 @@
     },
     "Delete %@?" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Удалить %@?"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -16032,6 +16026,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ を削除しますか？"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Удалить %@?"
           }
         },
         "zh-Hans" : {
@@ -20582,6 +20582,34 @@
         }
       }
     },
+    "Folders from this Mac are shared through virtiofs: inside them a container can change owners and permissions, but not on the shared folder itself. A database whose data directory is the shared folder itself, such as Postgres, fails to start. Share the folder one level up and point the data directory at a subfolder, for example `~/pg:/pg` with `PGDATA: /pg/data`." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Папки с этого Mac подключаются через virtiofs: внутри них контейнер может менять владельца и права, но не у самой подключённой папки. База данных, у которой каталог данных — сама подключённая папка (например, Postgres), не запустится. Подключите папку уровнем выше и укажите каталог данных в подпапке, например `~/pg:/pg` и `PGDATA: /pg/data`."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordner von diesem Mac werden über virtiofs geteilt: Darin kann ein Container Besitzer und Rechte ändern, aber nicht beim geteilten Ordner selbst. Eine Datenbank, deren Datenverzeichnis der geteilte Ordner selbst ist, etwa Postgres, startet nicht. Teile den Ordner eine Ebene höher und richte das Datenverzeichnis auf einen Unterordner, zum Beispiel `~/pg:/pg` mit `PGDATA: /pg/data`."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この Mac のフォルダは virtiofs で共有されます。その中ではコンテナが所有者や権限を変更できますが、共有フォルダ自体は変更できません。データディレクトリが共有フォルダそのものであるデータベース（Postgres など）は起動しません。フォルダを一つ上の階層で共有し、データディレクトリをサブフォルダに向けてください。例：`~/pg:/pg` と `PGDATA: /pg/data`。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此 Mac 上的文件夹通过 virtiofs 共享：在其中容器可以更改所有者和权限，但不能更改共享文件夹本身。数据目录就是共享文件夹本身的数据库（例如 Postgres）将无法启动。请共享上一级文件夹，并将数据目录指向子文件夹，例如 `~/pg:/pg` 配合 `PGDATA: /pg/data`。"
+          }
+        }
+      }
+    },
     "For an app not listed: give it a name, then paste its config into that app." : {
       "localizations" : {
         "de" : {
@@ -23825,12 +23853,6 @@
     },
     "Its containers are deleted and run again from the compose file. Volumes stay; files written inside the containers are lost." : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Его контейнеры удаляются и запускаются заново по compose-файлу. Тома остаются; файлы, записанные внутри контейнеров, пропадут."
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -23841,6 +23863,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "コンテナは削除され、Compose ファイルから再実行されます。ボリュームは残りますが、コンテナ内で書き込まれたファイルは失われます。"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Его контейнеры удаляются и запускаются заново по compose-файлу. Тома остаются; файлы, записанные внутри контейнеров, пропадут."
           }
         },
         "zh-Hans" : {
@@ -26667,12 +26695,6 @@
     },
     "Machine VMs without a machine" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "VM машин без самой машины"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -26683,6 +26705,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "マシンのない VM"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VM машин без самой машины"
           }
         },
         "zh-Hans" : {
@@ -32490,34 +32518,6 @@
         }
       }
     },
-    "On macOS, `container` mounts host folders via virtiofs, where chown/chmod aren't permitted. A service that must own its data directory (databases, etc.) can fail. Run it as its data uid (`user:`) for a fresh dir, or use a named volume. To reuse existing data, dump & restore." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Unter macOS bindet `container` Host-Ordner über virtiofs ein, wo chown/chmod nicht erlaubt sind. Ein Dienst, dem sein Datenverzeichnis gehören muss (Datenbanken usw.), kann fehlschlagen. Führen Sie ihn für ein neues Verzeichnis mit der UID seiner Daten aus (`user:`) oder verwenden Sie ein benanntes Volume. Um vorhandene Daten weiterzuverwenden: Dump erstellen und wiederherstellen."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "macOS では、`container` はホストのフォルダを virtiofs でマウントするため、chown/chmod が許可されません。データディレクトリを所有する必要があるサービス（データベースなど）は失敗することがあります。新しいディレクトリならデータの uid（`user:`）で実行するか、名前付きボリュームを使用してください。既存のデータを再利用するには、ダンプして復元してください。"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "В macOS `container` подключает папки хоста через virtiofs, где chown/chmod не разрешены. Сервис, которому нужно владеть своим каталогом данных (базы данных и т. п.), может завершиться ошибкой. Запустите его от uid владельца данных (`user:`) для нового каталога или используйте именованный том. Чтобы использовать существующие данные, сделайте дамп и восстановите их."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "在 macOS 上，`container` 通过 virtiofs 挂载主机文件夹，其中不允许使用 chown/chmod。必须拥有其数据目录的服务（如数据库等）可能会失败。对于新目录，请以其数据 uid（`user:`）运行，或使用命名卷。要复用现有数据，请先导出再恢复。"
-          }
-        }
-      }
-    },
     "On their own" : {
       "localizations" : {
         "de" : {
@@ -37143,12 +37143,6 @@
     },
     "Recreate “%@”?" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Пересоздать «%@»?"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -37159,6 +37153,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "「%@」を再作成しますか？"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пересоздать «%@»?"
           }
         },
         "zh-Hans" : {
@@ -38617,12 +38617,6 @@
     },
     "Restart the engine?" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Перезапустить движок?"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -38633,6 +38627,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "エンジンを再起動しますか？"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перезапустить движок?"
           }
         },
         "zh-Hans" : {
@@ -39765,12 +39765,6 @@
     },
     "Running containers stop while the engine restarts." : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Запущенные контейнеры остановятся, пока движок перезапускается."
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -39781,6 +39775,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "エンジンの再起動中、実行中のコンテナは停止します。"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Запущенные контейнеры остановятся, пока движок перезапускается."
           }
         },
         "zh-Hans" : {
@@ -45111,12 +45111,6 @@
     },
     "The VM stops and its disk is deleted. Files in your home folder stay." : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "VM остановится, её диск будет удалён. Файлы в вашей домашней папке останутся."
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -45127,6 +45121,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "VM は停止し、そのディスクは削除されます。ホームフォルダのファイルは残ります。"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VM остановится, её диск будет удалён. Файлы в вашей домашней папке останутся."
           }
         },
         "zh-Hans" : {
@@ -45711,12 +45711,6 @@
     },
     "The engine runs these, but container no longer lists them as machines, so they can't be opened. They use memory until deleted." : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Движок их запускает, но container больше не числит их машинами, поэтому открыть их нельзя. Пока они не удалены, они занимают память."
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -45727,6 +45721,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "エンジンはこれらを実行していますが、container はもうマシンとして扱っていないため開けません。削除するまでメモリを使用します。"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Движок их запускает, но container больше не числит их машинами, поэтому открыть их нельзя. Пока они не удалены, они занимают память."
           }
         },
         "zh-Hans" : {

@@ -24,7 +24,7 @@ struct VolumeMigrateView: View {
             VStack(spacing: 0) {
                 ScrollView {
                     VStack(alignment: .leading, spacing: DS.Spacing.l) {
-                        Label("Bind mounts (host folders) need no migration — mount the same host path with `-v`. Only named volumes hold Docker-managed data and are listed below.",
+                        Label("Bind mounts (host folders) aren't copied: mount the same folder with `-v`. A database that keeps its data right in that folder can't start from it, so move the data into a subfolder, mount the parent and point the data directory there (for Postgres, `PGDATA`). Only named volumes hold Docker-managed data and are listed below.",
                               systemImage: "info.circle")
                             .font(.caption).foregroundStyle(.secondary)
                         MigrateGroup(title: String(localized: "Docker named volumes")) {

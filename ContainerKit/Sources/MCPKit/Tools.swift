@@ -273,7 +273,7 @@ public enum ContainerTools {
                                             "name": Schema.string("Container name (optional)."),
                                             "ports": Schema.strings("Published ports, host:container, e.g. 8080:80."),
                                             "env": Schema.strings("Environment, KEY=value."),
-                                            "volumes": Schema.strings("Mounts, volume-or-folder:/path[:ro]."),
+                                            "volumes": Schema.strings("Mounts, volume-or-folder:/path[:ro]. A Mac folder can't change owner at its mount point, so for a database mount the folder one level up and keep the data in a subfolder (e.g. ~/pg:/pg with env PGDATA=/pg/data)."),
                                             "command": Schema.strings("Command and arguments instead of the image's.")],
                                            required: ["image"]),
                 summary: { "ran \($0["image"]?.string ?? "")" + ($0["name"]?.string.map { " as \($0)" } ?? "") },
