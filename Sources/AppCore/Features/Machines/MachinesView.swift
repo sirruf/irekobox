@@ -50,7 +50,7 @@ struct MachinesView: View {
                 Task { await app.perform { try await app.engine.deleteContainer(container.id, force: true) } }
             }
         } message: { _ in
-            Text("The VM stops and its disk is deleted. Files in your home folder stay.")
+            Text("The VM stops and its disk is deleted, including the machine's own home folder (~). Your home folder on the Mac stays.")
         }
         .sheet(isPresented: $showCreate) {
             if let model {
@@ -263,7 +263,7 @@ private struct MachineHero: View {
         .confirmationDialog("Delete machine “\(machine.id)”?", isPresented: $confirmDelete) {
             Button("Delete", role: .destructive) { Task { await model.delete(machine.id) } }
         } message: {
-            Text("Its disk and everything installed in it is removed. Your home folder on the Mac is not touched.")
+            Text("Its disk and everything on it are removed, including the machine's own home folder (~). Your home folder on the Mac is not touched.")
         }
     }
 
@@ -305,13 +305,19 @@ private struct MachineHero: View {
             }
             if let home = machine.userSetup?.home {
                 let mode = machine.homeMount ?? "rw"
+                // The Mac's home is mounted at its own path; `home` is the
+                // account's folder on the machine's disk.
+                let macHome = FileManager.default.homeDirectoryForCurrentUser.path
                 Group {
                     if mode == "none" {
-                        Text("Your home folder isn't shared")
+                        Text("Your Mac home folder isn't shared")
                     } else if mode == "ro" {
-                        Text("Your home folder is shared at `\(home)`, read only")
+                        Text("Your Mac home folder is shared at `\(macHome)`, read only")
                     } else {
-                        Text("Your home folder is shared at `\(home)`")
+                        Text("Your Mac home folder is shared at `\(macHome)`")
+                    }
+                    if home != macHome {
+                        Text("`\(home)` is on the machine's disk and is deleted with it")
                     }
                 }
                     .font(.callout).foregroundStyle(.secondary)
@@ -479,7 +485,7 @@ private struct MachineOverview: View {
                     ForEach(Array(Set(Self.memorySizes + [Self.size(machine.memory)])).sorted { Int($0.dropLast())! < Int($1.dropLast())! },
                             id: \.self) { Text($0).tag($0) }
                 }
-                Picker("Your home folder", selection: $homeMount) {
+                Picker("Mac home folder", selection: $homeMount) {
                     Text("Read and write").tag("rw")
                     Text("Read only").tag("ro")
                     Text("Not shared").tag("none")

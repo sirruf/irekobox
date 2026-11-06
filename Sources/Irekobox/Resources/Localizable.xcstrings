@@ -4403,36 +4403,6 @@
     },
     "%lld starters" : {
       "localizations" : {
-        "ru" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld шаблон"
-                }
-              },
-              "few" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld шаблона"
-                }
-              },
-              "many" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld шаблонов"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld шаблона"
-                }
-              }
-            }
-          }
-        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -4458,6 +4428,36 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld 個のテンプレート"
+                }
+              }
+            }
+          }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld шаблона"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld шаблонов"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld шаблон"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld шаблона"
                 }
               }
             }
@@ -7905,12 +7905,6 @@
     },
     "All Templates" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Все шаблоны"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7921,6 +7915,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "すべてのテンプレート"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Все шаблоны"
           }
         },
         "zh-Hans" : {
@@ -9627,12 +9627,6 @@
     "Basics" : {
       "comment" : "Compose template group",
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Основы"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -9643,6 +9637,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "基本"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Основы"
           }
         },
         "zh-Hans" : {
@@ -11270,12 +11270,6 @@
     },
     "Checks that your sites are up and shows their status" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Проверяет, что сайты работают, и показывает их статус"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -11286,6 +11280,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "サイトの稼働を確認して状態を表示"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Проверяет, что сайты работают, и показывает их статус"
           }
         },
         "zh-Hans" : {
@@ -17334,12 +17334,6 @@
     },
     "Dev Services" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Сервисы для разработки"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -17350,6 +17344,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "開発用サービス"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сервисы для разработки"
           }
         },
         "zh-Hans" : {
@@ -17363,12 +17363,6 @@
     "Develop" : {
       "comment" : "Compose template group",
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Разработка"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -17379,6 +17373,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "開発"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Разработка"
           }
         },
         "zh-Hans" : {
@@ -21138,12 +21138,6 @@
     },
     "Gitea" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gitea"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -21151,6 +21145,12 @@
           }
         },
         "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gitea"
+          }
+        },
+        "ru" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gitea"
@@ -24147,6 +24147,7 @@
       }
     },
     "Its disk and everything installed in it is removed. Your home folder on the Mac is not touched." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -24170,6 +24171,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "其磁盘及其中安装的所有内容都将被移除。Mac 上的个人文件夹不受影响。"
+          }
+        }
+      }
+    },
+    "Its disk and everything on it are removed, including the machine's own home folder (~). Your home folder on the Mac is not touched." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ihre Festplatte und alles darauf werden entfernt, einschließlich des eigenen Privatordners der Maschine (~). Ihr Privatordner auf dem Mac bleibt unberührt."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ディスクとその中のすべてが、マシン自体のホームフォルダ（~）も含めて削除されます。Mac 上のホームフォルダには影響しません。"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Диск машины и всё, что на нём есть, будут удалены, включая домашнюю папку машины (~). Ваша домашняя папка на Mac не затрагивается."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "其磁盘及其中的所有内容都将被移除，包括虚拟机自身的个人文件夹（~）。Mac 上的个人文件夹不受影响。"
           }
         }
       }
@@ -24428,12 +24457,6 @@
     },
     "Jupyter" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Jupyter"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -24441,6 +24464,12 @@
           }
         },
         "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jupyter"
+          }
+        },
+        "ru" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Jupyter"
@@ -24456,12 +24485,6 @@
     },
     "JupyterLab with NumPy, pandas and Matplotlib" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "JupyterLab с NumPy, pandas и Matplotlib"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -24472,6 +24495,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "NumPy、pandas、Matplotlib 入りの JupyterLab"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JupyterLab с NumPy, pandas и Matplotlib"
           }
         },
         "zh-Hans" : {
@@ -24512,12 +24541,6 @@
     },
     "Kafka" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kafka"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -24525,6 +24548,12 @@
           }
         },
         "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kafka"
+          }
+        },
+        "ru" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kafka"
@@ -26848,6 +26877,34 @@
         }
       }
     },
+    "Mac home folder" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac-Privatordner"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac のホームフォルダ"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Домашняя папка Mac"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac 个人文件夹"
+          }
+        }
+      }
+    },
     "Machine" : {
       "localizations" : {
         "de" : {
@@ -27440,12 +27497,6 @@
     },
     "Metrics collected by Prometheus, drawn by Grafana, already connected" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Метрики собирает Prometheus, рисует Grafana — уже связаны"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -27456,6 +27507,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Prometheus が集め、Grafana が描くメトリクス。接続済み"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Метрики собирает Prometheus, рисует Grafana — уже связаны"
           }
         },
         "zh-Hans" : {
@@ -27614,12 +27671,6 @@
     },
     "MongoDB" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MongoDB"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -27627,6 +27678,12 @@
           }
         },
         "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MongoDB"
+          }
+        },
+        "ru" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "MongoDB"
@@ -27670,12 +27727,6 @@
     },
     "MongoDB with mongo-express to browse it" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "MongoDB и mongo-express для просмотра"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -27686,6 +27737,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "MongoDB と閲覧用の mongo-express"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MongoDB и mongo-express для просмотра"
           }
         },
         "zh-Hans" : {
@@ -27699,12 +27756,6 @@
     "Monitor" : {
       "comment" : "Compose template group",
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Мониторинг"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -27715,6 +27766,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "監視"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Мониторинг"
           }
         },
         "zh-Hans" : {
@@ -29639,12 +29696,6 @@
     },
     "Nextcloud" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nextcloud"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -29652,6 +29703,12 @@
           }
         },
         "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nextcloud"
+          }
+        },
+        "ru" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nextcloud"
@@ -32788,12 +32845,6 @@
     },
     "One Kafka broker without ZooKeeper, with Kafka UI" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Один брокер Kafka без ZooKeeper, с Kafka UI"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -32804,6 +32855,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ZooKeeper なしの Kafka ブローカー 1 台と Kafka UI"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Один брокер Kafka без ZooKeeper, с Kafka UI"
           }
         },
         "zh-Hans" : {
@@ -33914,12 +33971,6 @@
     },
     "Opens at" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Открывается по адресу"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -33930,6 +33981,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "開くアドレス"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Открывается по адресу"
           }
         },
         "zh-Hans" : {
@@ -35548,12 +35605,6 @@
     },
     "Postgres, Redis, a mail catcher and S3 storage for your app" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Postgres, Redis, перехват почты и S3 для вашего приложения"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -35564,6 +35615,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "アプリ用の Postgres、Redis、メールキャッチャー、S3"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Postgres, Redis, перехват почты и S3 для вашего приложения"
           }
         },
         "zh-Hans" : {
@@ -35744,12 +35801,6 @@
     },
     "Prometheus + Grafana" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prometheus + Grafana"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -35757,6 +35808,12 @@
           }
         },
         "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prometheus + Grafana"
+          }
+        },
+        "ru" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Prometheus + Grafana"
@@ -39753,12 +39810,6 @@
     },
     "Runs" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Запускает"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -39769,6 +39820,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "実行するもの"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Запускает"
           }
         },
         "zh-Hans" : {
@@ -40740,12 +40797,6 @@
     "Self-Host" : {
       "comment" : "Compose template group",
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Свой сервер"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -40756,6 +40807,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "セルフホスト"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Свой сервер"
           }
         },
         "zh-Hans" : {
@@ -44958,7 +45015,36 @@
         }
       }
     },
+    "The VM stops and its disk is deleted, including the machine's own home folder (~). Your home folder on the Mac stays." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die VM stoppt und ihre Festplatte wird gelöscht, einschließlich des eigenen Privatordners der Maschine (~). Ihr Privatordner auf dem Mac bleibt erhalten."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VM は停止し、マシン自体のホームフォルダ（~）を含むディスクが削除されます。Mac 上のホームフォルダは残ります。"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VM остановится, а её диск будет удалён вместе с домашней папкой машины (~). Ваша домашняя папка на Mac останется."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VM 会停止，其磁盘会被删除，包括虚拟机自身的个人文件夹（~）。Mac 上的个人文件夹会保留。"
+          }
+        }
+      }
+    },
     "The VM stops and its disk is deleted. Files in your home folder stay." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -47796,12 +47882,6 @@
     },
     "Uptime Kuma" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Uptime Kuma"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -47809,6 +47889,12 @@
           }
         },
         "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uptime Kuma"
+          }
+        },
+        "ru" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Uptime Kuma"
@@ -50028,12 +50114,6 @@
     },
     "Workflows that connect apps and APIs" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Сценарии, которые связывают приложения и API"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -50044,6 +50124,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "アプリと API をつなぐワークフロー"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сценарии, которые связывают приложения и API"
           }
         },
         "zh-Hans" : {
@@ -50595,6 +50681,90 @@
         }
       }
     },
+    "Your Mac home folder is shared at `%@`" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ihr Mac-Privatordner ist unter `%@` geteilt"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac のホームフォルダは `%@` で共有されています"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Домашняя папка Mac доступна в `%@`"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac 个人文件夹共享于 `%@`"
+          }
+        }
+      }
+    },
+    "Your Mac home folder is shared at `%@`, read only" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ihr Mac-Privatordner ist unter `%@` geteilt, schreibgeschützt"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac のホームフォルダは `%@` で読み出し専用で共有されています"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Домашняя папка Mac доступна в `%@` только для чтения"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac 个人文件夹以只读方式共享于 `%@`"
+          }
+        }
+      }
+    },
+    "Your Mac home folder isn't shared" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ihr Mac-Privatordner ist nicht geteilt"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac のホームフォルダは共有されていません"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Домашняя папка Mac не открыта для общего доступа"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac 个人文件夹未共享"
+          }
+        }
+      }
+    },
     "Your app, in a container, in a small Linux VM, in your Mac. Boxes inside boxes." : {
       "localizations" : {
         "de" : {
@@ -50652,6 +50822,7 @@
       }
     },
     "Your home folder" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -50680,6 +50851,7 @@
       }
     },
     "Your home folder is shared at `%@`" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -50708,6 +50880,7 @@
       }
     },
     "Your home folder is shared at `%@`, read only" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -50736,6 +50909,7 @@
       }
     },
     "Your home folder isn't shared" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -50793,12 +50967,6 @@
     },
     "Your own Git server with a Postgres database" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Свой Git-сервер с базой Postgres"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -50811,6 +50979,12 @@
             "value" : "Postgres データベース付きの自分の Git サーバー"
           }
         },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Свой Git-сервер с базой Postgres"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -50821,12 +50995,6 @@
     },
     "Your own files, calendars and contacts, with MariaDB" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Свои файлы, календари и контакты, с MariaDB"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -50837,6 +51005,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "自分のファイル、カレンダー、連絡先（MariaDB 付き）"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Свои файлы, календари и контакты, с MariaDB"
           }
         },
         "zh-Hans" : {
@@ -50899,6 +51073,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "缩小"
+          }
+        }
+      }
+    },
+    "`%@` is on the machine's disk and is deleted with it" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "`%@` liegt auf der Festplatte der Maschine und wird mit ihr gelöscht"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "`%@` はマシンのディスク上にあり、マシンと一緒に削除されます"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "`%@` находится на диске машины и удаляется вместе с ней"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "`%@` 位于虚拟机的磁盘上，会随虚拟机一起删除"
           }
         }
       }
@@ -54209,12 +54411,6 @@
     },
     "n8n" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "n8n"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -54222,6 +54418,12 @@
           }
         },
         "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "n8n"
+          }
+        },
+        "ru" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "n8n"
@@ -55284,12 +55486,6 @@
     },
     "or start from a template" : {
       "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "или начните с шаблона"
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
@@ -55300,6 +55496,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "またはテンプレートから始める"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "или начните с шаблона"
           }
         },
         "zh-Hans" : {
