@@ -262,12 +262,6 @@ public final class AppState {
 
     public var appUpdatesAvailable: Bool { AppUpdater.appcastURL != nil }
 
-    /// Bring up the Settings window (where updates are shown).
-    public func openSettings() {
-        NSApplication.shared.activate()
-        NSApplication.shared.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-    }
-
     /// Tell the agent's supervisor about a stop or start by the user: a
     /// container stopped by hand must not be restarted by its policy.
     public func noteHandAction(stopped: Bool, _ ids: [String]) {

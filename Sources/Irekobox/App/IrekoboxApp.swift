@@ -36,10 +36,7 @@ struct IrekoboxApp: App {
             CommandGroup(replacing: .appInfo) {
                 AboutMenuItem()
                 if appState.appUpdatesAvailable {
-                    Button("Check for Updates") {
-                        Task { await appState.appUpdater.checkIfDue(force: true) }
-                        appState.openSettings()
-                    }
+                    CheckForUpdatesMenuItem(updater: appState.appUpdater)
                 }
             }
             CommandGroup(after: .toolbar) {
@@ -160,5 +157,18 @@ private struct AboutMenuItem: View {
 
     var body: some View {
         Button("About \(Brand.name)") { openWindow(id: "about") }
+    }
+}
+
+/// Checks and opens About, which shows the result and offers the install.
+private struct CheckForUpdatesMenuItem: View {
+    let updater: AppUpdater
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Button("Check for Updates") {
+            openWindow(id: "about")
+            Task { await updater.checkIfDue(force: true) }
+        }
     }
 }
