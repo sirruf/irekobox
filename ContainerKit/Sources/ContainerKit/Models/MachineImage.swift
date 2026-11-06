@@ -25,7 +25,7 @@ public enum MachineImage {
         let reference = image.split(separator: "@").first.map(String.init) ?? image
         let last = reference.split(separator: "/").last.map(String.init) ?? reference
         let parts = last.split(separator: ":", maxSplits: 1).map(String.init)
-        return (parts[0].lowercased(), parts.count > 1 ? parts[1] : "latest")
+        return (parts.first?.lowercased() ?? "", parts.count > 1 ? parts[1] : "latest")
     }
 
     /// Docker Hub repositories a machine boots, with what each is.

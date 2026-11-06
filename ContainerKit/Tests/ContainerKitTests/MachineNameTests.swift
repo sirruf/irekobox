@@ -89,4 +89,14 @@ final class MachineImageTests: XCTestCase {
         XCTAssertTrue(MachineImage.dockerfile(for: "fedora:41")!.contains("dnf install -y systemd"))
         XCTAssertNil(MachineImage.dockerfile(for: "alpine:latest"))
     }
+
+    /// The new-machine sheet evaluates these on every keystroke, starting from
+    /// an empty field.
+    func testIncompleteImageReferencesAreUnknown() {
+        for image in ["", ":", "/", "@", "ghcr.io/:"] {
+            XCTAssertEqual(MachineImage.family(of: image), .unknown, image)
+            XCTAssertFalse(MachineImage.needsPreparing(image), image)
+            XCTAssertNil(MachineImage.dockerfile(for: image), image)
+        }
+    }
 }
