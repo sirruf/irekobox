@@ -288,6 +288,30 @@ public enum ContainerTools {
                     try await context.engine.runContainer(arguments)
                     return "Started a container from \(try args.required("image"))."
                 }),
+        MCPTool(name: "build_image", title: "Build an image",
+                description: "Build an image from a folder on this Mac, then start it with run_container. The builder starts by itself, so there is nothing to set up first. The call returns when the build ends, which can take minutes.",
+                level: .everything, destructive: false,
+                inputSchema: Schema.object(["context": Schema.string("Full path of the build context folder."),
+                                            "tag": Schema.string("Name for the image, e.g. shop-api:dev."),
+                                            "dockerfile": Schema.string("Dockerfile, relative to the context unless a full path (default: Dockerfile or Containerfile in the context)."),
+                                            "build_args": Schema.strings("Build arguments, KEY=value."),
+                                            "target": Schema.string("Stage to stop at, in a multi-stage Dockerfile."),
+                                            "no_cache": Schema.boolean("Build every step again (default false).")],
+                                           required: ["context", "tag"]),
+                summary: { "built \($0["tag"]?.string ?? "")" },
+                run: { args, context in
+                    let options = try buildOptions(args)
+                    var tail: [String] = []
+                    do {
+                        for try await line in context.engine.buildImage(options) {
+                            tail = Array((tail + [line]).suffix(20))
+                        }
+                    } catch {
+                        // BuildKit prints the failing step in its last lines.
+                        throw ToolError(([error.localizedDescription] + tail).joined(separator: "\n"))
+                    }
+                    return "Built \(options.tag)."
+                }),
         MCPTool(name: "exec_command", title: "Run a command inside a container",
                 description: "Run one command in a running container and return its output, e.g. [\"ls\", \"/app\"].",
                 level: .everything, destructive: false,
@@ -365,6 +389,36 @@ public enum ContainerTools {
                     }
                 }),
     ]
+
+    // MARK: - Build
+
+    /// Paths are made absolute: the server's working directory is whatever
+    /// the assistant's client happened to start it in.
+    static func buildOptions(_ args: JSON) throws -> BuildOptions {
+        let folder = NSString(string: try args.required("context")).expandingTildeInPath
+        guard folder.hasPrefix("/") else { throw ToolError("context must be a full path, not \(folder).") }
+        var isFolder: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: folder, isDirectory: &isFolder), isFolder.boolValue else {
+            throw ToolError("No folder at \(folder).")
+        }
+        let root = URL(filePath: folder)
+        let dockerfile: String
+        if let given = args["dockerfile"]?.string, !given.isEmpty {
+            dockerfile = given.hasPrefix("/") ? given : root.appending(path: given).path
+            guard FileManager.default.fileExists(atPath: dockerfile) else { throw ToolError("No Dockerfile at \(dockerfile).") }
+        } else {
+            guard let found = ["Dockerfile", "Containerfile"].map({ root.appending(path: $0).path })
+                .first(where: FileManager.default.fileExists(atPath:)) else {
+                throw ToolError("No Dockerfile or Containerfile in \(folder).")
+            }
+            dockerfile = found
+        }
+        var options = BuildOptions(contextPath: folder, dockerfilePath: dockerfile, tag: try args.required("tag"),
+                                   noCache: args["no_cache"]?.bool ?? false)
+        options.buildArguments = args.strings("build_args")
+        options.target = args["target"]?.string.flatMap { $0.isEmpty ? nil : $0 }
+        return options
+    }
 
     // MARK: - Text
 

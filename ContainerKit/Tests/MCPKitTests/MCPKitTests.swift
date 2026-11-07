@@ -11,6 +11,10 @@ final class MockEngine: ContainerEngine, @unchecked Sendable {
     private var _holdNext = false
     var started: [String] = []
     var deleted: [String] = []
+    var built: [BuildOptions] = []
+    /// What the next build prints, and how it ends.
+    var buildLines: [String] = []
+    var buildError: Error?
 
     static let running = try! JSONDecoder().decode(SystemStatus.self, from: Data(#"{"status":"running"}"#.utf8))
 
@@ -96,7 +100,14 @@ final class MockEngine: ContainerEngine, @unchecked Sendable {
     func deleteImage(_ reference: String, force: Bool) async throws {}
     func pruneImages(all: Bool) async throws {}
     func pullImageWithProgress(_ reference: String, platform: String?) -> AsyncThrowingStream<String, Error> { .init { $0.finish() } }
-    func buildImage(_ options: BuildOptions) -> AsyncThrowingStream<String, Error> { .init { $0.finish() } }
+    func buildImage(_ options: BuildOptions) -> AsyncThrowingStream<String, Error> {
+        built.append(options)
+        let lines = buildLines, error = buildError
+        return .init { continuation in
+            lines.forEach { continuation.yield($0) }
+            continuation.finish(throwing: error)
+        }
+    }
     func pushImage(_ reference: String) -> AsyncThrowingStream<String, Error> { .init { $0.finish() } }
     func createVolume(_ name: String) async throws {}
     func createVolume(_ name: String, labels: [String: String], size: String?, options: [String: String]) async throws {}
@@ -215,6 +226,80 @@ final class MCPServerTests: XCTestCase {
         XCTAssertEqual(reply["result"]?["isError"]?.bool, false)
         XCTAssertEqual(engine.started, ["web"])
         XCTAssertEqual(ActivityLog.read(from: folder.appending(path: "activity.jsonl")).first?.summary, "started web")
+    }
+
+    private func buildCall(_ arguments: JSON) -> JSON { ["name": "build_image", "arguments": arguments] }
+
+    private func text(_ reply: JSON) -> String {
+        reply["result"]?["content"]?.array?.first?["text"]?.string ?? ""
+    }
+
+    func testBuildingNeedsEverything() async throws {
+        let engine = MockEngine()
+        let operate = try server(level: .operate, engine: engine)
+        let names = toolNames(await send(operate, "tools/list"))
+        XCTAssertFalse(names.contains("build_image"))
+        let reply = await send(operate, "tools/call", buildCall(["context": .string(folder.path), "tag": "app:dev"]))
+        XCTAssertEqual(reply["result"]?["isError"]?.bool, true)
+        XCTAssertTrue(engine.built.isEmpty)
+    }
+
+    func testBuildUsesTheDockerfileInTheContext() async throws {
+        try Data().write(to: folder.appending(path: "Dockerfile"))
+        let engine = MockEngine()
+        let server = try server(level: .everything, engine: engine)
+        let reply = await send(server, "tools/call", buildCall([
+            "context": .string(folder.path), "tag": "app:dev", "build_args": ["MODE=dev"], "target": "web", "no_cache": true,
+        ]))
+        XCTAssertEqual(reply["result"]?["isError"]?.bool, false)
+        XCTAssertEqual(text(reply), "Built app:dev.")
+        let options = try XCTUnwrap(engine.built.first)
+        XCTAssertEqual(options.contextPath, folder.path)
+        XCTAssertEqual(options.dockerfilePath, folder.appending(path: "Dockerfile").path)
+        XCTAssertEqual(options.buildArguments, ["MODE=dev"])
+        XCTAssertEqual(options.target, "web")
+        XCTAssertTrue(options.noCache)
+        XCTAssertEqual(ActivityLog.read(from: folder.appending(path: "activity.jsonl")).first?.summary, "built app:dev")
+    }
+
+    func testBuildResolvesARelativeDockerfileAgainstTheContext() throws {
+        let nested = folder.appending(path: "docker")
+        try FileManager.default.createDirectory(at: nested, withIntermediateDirectories: true)
+        try Data().write(to: nested.appending(path: "api.Dockerfile"))
+        let options = try ContainerTools.buildOptions([
+            "context": .string(folder.path), "tag": "app:dev", "dockerfile": "docker/api.Dockerfile",
+        ])
+        XCTAssertEqual(options.dockerfilePath, nested.appending(path: "api.Dockerfile").path)
+    }
+
+    func testBuildFallsBackToContainerfile() throws {
+        try Data().write(to: folder.appending(path: "Containerfile"))
+        let options = try ContainerTools.buildOptions(["context": .string(folder.path), "tag": "app:dev"])
+        XCTAssertEqual(options.dockerfilePath, folder.appending(path: "Containerfile").path)
+    }
+
+    func testBuildRefusesWhatItCantFindWithoutBuilding() async throws {
+        let engine = MockEngine()
+        let server = try server(level: .everything, engine: engine)
+        for (context, expected) in [("relative/path", "full path"), ("/no/such/folder", "No folder"),
+                                    (folder.path, "No Dockerfile or Containerfile")] {
+            let reply = await send(server, "tools/call", buildCall(["context": .string(context), "tag": "app:dev"]))
+            XCTAssertEqual(reply["result"]?["isError"]?.bool, true)
+            XCTAssertTrue(text(reply).contains(expected), text(reply))
+        }
+        XCTAssertTrue(engine.built.isEmpty)
+    }
+
+    func testBuildFailureShowsTheFailingStep() async throws {
+        try Data().write(to: folder.appending(path: "Dockerfile"))
+        let engine = MockEngine()
+        engine.buildLines = ["#5 [2/2] RUN make", "#5 ERROR: exit code 2"]
+        engine.buildError = EngineError.timedOut
+        let server = try server(level: .everything, engine: engine)
+        let reply = await send(server, "tools/call", buildCall(["context": .string(folder.path), "tag": "app:dev"]))
+        XCTAssertEqual(reply["result"]?["isError"]?.bool, true)
+        XCTAssertTrue(text(reply).contains("#5 ERROR: exit code 2"), text(reply))
+        XCTAssertEqual(ActivityLog.read(from: folder.appending(path: "activity.jsonl")).first?.outcome, .failed)
     }
 
     func testDeletingAsksFirst() async throws {
