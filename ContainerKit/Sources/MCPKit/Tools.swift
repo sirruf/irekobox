@@ -5,6 +5,8 @@ import ContainerKit
 public struct ToolContext: Sendable {
     public let engine: any ContainerEngine
     public let cli: ContainerCLI
+    /// Where a long-running tool says how far it got.
+    public var progress: @Sendable (String) -> Void = { _ in }
 
     public init(engine: any ContainerEngine, cli: ContainerCLI) {
         self.engine = engine
@@ -305,11 +307,14 @@ public enum ContainerTools {
                     do {
                         for try await line in context.engine.buildImage(options) {
                             tail = Array((tail + [line]).suffix(20))
+                            context.progress(line)
                         }
                     } catch {
                         // BuildKit prints the failing step in its last lines.
                         throw ToolError(([error.localizedDescription] + tail).joined(separator: "\n"))
                     }
+                    // A cancelled stream just ends, as a finished build does.
+                    try Task.checkCancellation()
                     return "Built \(options.tag)."
                 }),
         MCPTool(name: "exec_command", title: "Run a command inside a container",

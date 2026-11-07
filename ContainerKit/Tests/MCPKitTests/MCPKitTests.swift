@@ -11,7 +11,13 @@ final class MockEngine: ContainerEngine, @unchecked Sendable {
     private var _holdNext = false
     var started: [String] = []
     var deleted: [String] = []
-    var built: [BuildOptions] = []
+    private var _built: [BuildOptions] = []
+    private var _buildEnded = false
+    var built: [BuildOptions] { lock.withLock { _built } }
+    var buildEnded: Bool { lock.withLock { _buildEnded } }
+    /// Builds stay running until the stream is cancelled or ``finishBuild()``.
+    var holdBuilds = false
+    private var buildContinuation: AsyncThrowingStream<String, Error>.Continuation?
     /// What the next build prints, and how it ends.
     var buildLines: [String] = []
     var buildError: Error?
@@ -101,13 +107,20 @@ final class MockEngine: ContainerEngine, @unchecked Sendable {
     func pruneImages(all: Bool) async throws {}
     func pullImageWithProgress(_ reference: String, platform: String?) -> AsyncThrowingStream<String, Error> { .init { $0.finish() } }
     func buildImage(_ options: BuildOptions) -> AsyncThrowingStream<String, Error> {
-        built.append(options)
-        let lines = buildLines, error = buildError
+        lock.withLock { _built.append(options) }
+        let lines = buildLines, error = buildError, hold = holdBuilds
         return .init { continuation in
+            continuation.onTermination = { [self] _ in lock.withLock { _buildEnded = true } }
             lines.forEach { continuation.yield($0) }
-            continuation.finish(throwing: error)
+            if hold {
+                lock.withLock { buildContinuation = continuation }
+            } else {
+                continuation.finish(throwing: error)
+            }
         }
     }
+
+    func finishBuild() { lock.withLock { buildContinuation }?.finish() }
     func pushImage(_ reference: String) -> AsyncThrowingStream<String, Error> { .init { $0.finish() } }
     func createVolume(_ name: String) async throws {}
     func createVolume(_ name: String, labels: [String: String], size: String?, options: [String: String]) async throws {}
@@ -133,6 +146,13 @@ func container(_ id: String, _ state: String) -> Container {
     return try! JSONDecoder().decode(Container.self, from: Data(json.utf8))
 }
 
+final class Lines: @unchecked Sendable {
+    private let lock = NSLock()
+    private var lines: [String] = []
+    var all: [String] { lock.withLock { lines } }
+    func append(_ line: String) { lock.withLock { lines.append(line) } }
+}
+
 struct Deny: Approver { func approve(assistant: String, action: String) async -> Bool { false } }
 
 /// Says no, and keeps what it was asked.
@@ -154,7 +174,7 @@ final class MCPServerTests: XCTestCase {
     }
 
     private func server(level: AccessLevel?, ask: Bool = true, approver: Approver = AlwaysApprove(),
-                        engine: MockEngine = MockEngine()) throws -> MCPServer {
+                        engine: MockEngine = MockEngine(), progressInterval: Duration = .seconds(5)) throws -> MCPServer {
         var settings = AssistantSettings()
         settings.askBeforeDeleting = ask
         var key: String?
@@ -166,7 +186,8 @@ final class MCPServerTests: XCTestCase {
         try AssistantFiles.save(settings, to: folder.appending(path: "assistants.json"))
         return MCPServer(context: ToolContext(engine: engine, cli: ContainerCLI(binaryPath: "/nonexistent")), key: key,
                          settingsURL: folder.appending(path: "assistants.json"),
-                         activityURL: folder.appending(path: "activity.jsonl"), approver: approver)
+                         activityURL: folder.appending(path: "activity.jsonl"), approver: approver,
+                         progressInterval: progressInterval)
     }
 
     private func send(_ server: MCPServer, _ method: String, _ params: JSON = [:], id: Int = 1) async -> JSON {
@@ -300,6 +321,80 @@ final class MCPServerTests: XCTestCase {
         XCTAssertEqual(reply["result"]?["isError"]?.bool, true)
         XCTAssertTrue(text(reply).contains("#5 ERROR: exit code 2"), text(reply))
         XCTAssertEqual(ActivityLog.read(from: folder.appending(path: "activity.jsonl")).first?.outcome, .failed)
+    }
+
+    private func until(_ condition: () -> Bool, file: StaticString = #filePath, line: UInt = #line) async throws {
+        for _ in 0..<500 where !condition() { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertTrue(condition(), file: file, line: line)
+    }
+
+    private func heldBuild() throws -> (MockEngine, JSON) {
+        try Data().write(to: folder.appending(path: "Dockerfile"))
+        let engine = MockEngine()
+        engine.holdBuilds = true
+        engine.buildLines = ["#3 [1/2] FROM alpine"]
+        return (engine, buildCall(["context": .string(folder.path), "tag": "app:dev"]))
+    }
+
+    func testCancellingABuildStopsItAndSendsNoReply() async throws {
+        let (engine, call) = try heldBuild()
+        let server = try server(level: .everything, engine: engine)
+        let request: JSON = ["jsonrpc": "2.0", "id": 7, "method": "tools/call", "params": call]
+        let reply = Task { await server.handle(request.line()) }
+        try await until { !engine.built.isEmpty }
+        let cancel: JSON = ["jsonrpc": "2.0", "method": "notifications/cancelled", "params": ["requestId": 7]]
+        let answer = await server.handle(cancel.line())
+        XCTAssertNil(answer)
+        let result = await reply.value
+        XCTAssertNil(result)
+        XCTAssertTrue(engine.buildEnded)
+        XCTAssertEqual(ActivityLog.read(from: folder.appending(path: "activity.jsonl")).first?.outcome, .failed)
+    }
+
+    func testProgressReportsTheLatestLineWhileABuildRuns() async throws {
+        let (engine, call) = try heldBuild()
+        let server = try server(level: .everything, engine: engine, progressInterval: .milliseconds(10))
+        let sent = Lines()
+        let params: JSON = ["name": "build_image", "arguments": call["arguments"] ?? [:], "_meta": ["progressToken": "t1"]]
+        let request: JSON = ["jsonrpc": "2.0", "id": 8, "method": "tools/call", "params": params]
+        let reply = Task { await server.handle(request.line(), notify: sent.append) }
+        try await until { sent.all.count >= 2 }
+        engine.finishBuild()
+        let result = await reply.value
+        XCTAssertTrue(result?.contains("Built app:dev.") == true)
+        let notes = sent.all.compactMap(JSON.parse)
+        XCTAssertEqual(notes.first?["method"]?.string, "notifications/progress")
+        XCTAssertEqual(notes.first?["params"]?["progressToken"]?.string, "t1")
+        XCTAssertEqual(notes.first?["params"]?["message"]?.string, "#3 [1/2] FROM alpine")
+        XCTAssertEqual(notes.first?["params"]?["progress"]?.int, 1)
+        XCTAssertEqual(notes.dropFirst().first?["params"]?["progress"]?.int, 2)
+    }
+
+    func testNoProgressWithoutAToken() async throws {
+        try Data().write(to: folder.appending(path: "Dockerfile"))
+        let server = try server(level: .everything, progressInterval: .milliseconds(1))
+        let sent = Lines()
+        let request: JSON = ["jsonrpc": "2.0", "id": 9, "method": "tools/call",
+                             "params": buildCall(["context": .string(folder.path), "tag": "app:dev"])]
+        _ = await server.handle(request.line(), notify: sent.append)
+        XCTAssertTrue(sent.all.isEmpty)
+    }
+
+    func testServeAnswersWhileABuildRunsAndStopsItWhenTheClientGoes() async throws {
+        let (engine, call) = try heldBuild()
+        let server = try server(level: .everything, engine: engine)
+        let input = Pipe(), output = Pipe()
+        let serving = Task { await server.serve(input: input.fileHandleForReading, output: output.fileHandleForWriting) }
+        let build: JSON = ["jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": call]
+        input.fileHandleForWriting.write(Data((build.line() + "\n").utf8))
+        try await until { !engine.built.isEmpty }
+        let ping: JSON = ["jsonrpc": "2.0", "id": 2, "method": "ping"]
+        input.fileHandleForWriting.write(Data((ping.line() + "\n").utf8))
+        let answer = await Task.detached { output.fileHandleForReading.availableData }.value
+        XCTAssertEqual(JSON.parse(String(decoding: answer, as: UTF8.self).trimmingCharacters(in: .newlines))?["id"]?.int, 2)
+        input.fileHandleForWriting.closeFile()
+        await serving.value
+        XCTAssertTrue(engine.buildEnded)
     }
 
     func testDeletingAsksFirst() async throws {
