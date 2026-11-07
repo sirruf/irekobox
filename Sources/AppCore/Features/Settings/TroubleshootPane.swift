@@ -212,7 +212,7 @@ struct DockerCompatibilityPane: View {
                 } header: {
                     Text("Use it")
                 } footer: {
-                    Text("Creating the context adds an entry to ~/.docker; your current default context stays as it is.")
+                    Text("Creating the context adds it and an image builder to ~/.docker; your current default context stays as it is.")
                 }
             }
 
@@ -356,6 +356,8 @@ struct DockerCompatibilityPane: View {
         if !linking, case .failed = link {} else if !linking { link = SocketLinkHelper.state() }
         if status?.listening == true, contextExists == nil || !working {
             contextExists = await DockerContext.exists()
+            // Contexts made before the builder came with them.
+            if contextExists == true { try? await DockerContext.ensureBuilder(socketPath: socketPath) }
         }
     }
 

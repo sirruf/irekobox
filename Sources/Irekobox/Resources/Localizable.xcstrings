@@ -15798,6 +15798,7 @@
       }
     },
     "Creating the context adds an entry to ~/.docker; your current default context stays as it is." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -15821,6 +15822,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "创建上下文会在 ~/.docker 中添加一个条目；你当前的默认上下文保持不变。"
+          }
+        }
+      }
+    },
+    "Creating the context adds it and an image builder to ~/.docker; your current default context stays as it is." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beim Erstellen des Kontexts werden er selbst und ein Image-Builder zu ~/.docker hinzugefügt; Ihr aktueller Standardkontext bleibt unverändert."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コンテキストを作成すると、コンテキストとイメージビルダーが ~/.docker に追加されます。現在のデフォルトのコンテキストはそのままです。"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "При создании контекста в ~/.docker добавляются он сам и сборщик образов; текущий контекст по умолчанию не меняется."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建上下文会将它和一个镜像构建器添加到 ~/.docker；你当前的默认上下文保持不变。"
           }
         }
       }
