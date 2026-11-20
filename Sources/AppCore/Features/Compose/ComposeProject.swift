@@ -141,7 +141,9 @@ struct ComposeService: Identifiable, Hashable {
             result = live.filter { seen.insert($0.id).inserted }.map { .port($0, live: true) }
         } else {
             result = (definition?.ports ?? []).compactMap { mapping in
-                guard let published = mapping.published.flatMap({ Int($0) }), let target = mapping.target else { return nil }
+                // A host range (`8080-8081`) shows its first port, the one the first replica gets.
+                guard let published = mapping.published.flatMap({ Int($0.split(separator: "-").first ?? "") }),
+                      let target = mapping.target else { return nil }
                 let port = Container.PublishedPort(containerPort: target, hostPort: published,
                                                    hostAddress: mapping.hostIP, proto: mapping.networkProtocol, count: nil)
                 return .port(PortLink(port), live: false)

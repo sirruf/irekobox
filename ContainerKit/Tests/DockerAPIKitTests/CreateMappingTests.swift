@@ -15,6 +15,21 @@ final class CreateMappingTests: XCTestCase {
         do { _ = try map(json); return nil } catch let error as DockerAPIError { return error.message } catch { return "\(error)" }
     }
 
+    /// A host port range publishes the port chosen for it.
+    func testAHostPortRangePublishesTheChosenPort() throws {
+        let request = try JSONDecoder().decode(CreateRequest.self, from: Data(#"""
+            {"Image":"nginx","HostConfig":{"PortBindings":{"80/tcp":[{"HostIp":"127.0.0.1","HostPort":"8080-8081"}],"53/udp":[{"HostPort":"5300-5301"}]}}}
+            """#.utf8))
+        let result = try CreateMapping.arguments(request, name: "web", platform: nil,
+                                                 rangePorts: [CreateMapping.rangeKey("80/tcp", 0): 8081,
+                                                              CreateMapping.rangeKey("53/udp", 0): 5300]) { 1 }
+        XCTAssertEqual(result.arguments.split(separator: "-p").count, 3)
+        XCTAssertTrue(result.arguments.contains("127.0.0.1:8081:80"))
+        XCTAssertTrue(result.arguments.contains("5300:53/udp"))
+        XCTAssertNotNil(refusal(#"{"Image":"x","HostConfig":{"PortBindings":{"80/tcp":[{"HostPort":"8080-8081"}]}}}"#),
+                        "a range nothing was chosen for")
+    }
+
     func testMinimalRunUsesTheDefaultNetwork() throws {
         let result = try map(#"{"Image":"alpine","Cmd":["echo","hi"]}"#)
         XCTAssertEqual(result.arguments, ["--name", "web", "--network", "default", "alpine", "echo", "hi"])

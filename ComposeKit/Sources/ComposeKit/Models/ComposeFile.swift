@@ -2,6 +2,8 @@ import Foundation
 
 /// A parsed Compose file (the subset Irekobox maps onto `container`).
 public struct ComposeFile: Codable, Sendable {
+    /// Obsolete in the Compose Specification: informative only, ignored.
+    public let version: ScalarValue?
     public let name: String?
     public let services: [String: Service]
     public let networks: [String: ResourceDef?]?
@@ -57,6 +59,7 @@ public struct Service: Codable, Sendable {
     public let shmSize: String?
     public let profiles: [String]?
     public let scale: Int?
+    public let deploy: Deploy?
     public let healthcheck: Healthcheck?
 
     enum CodingKeys: String, CodingKey {
@@ -77,7 +80,26 @@ public struct Service: Codable, Sendable {
         case containerName = "container_name"
         case platform
         case shmSize = "shm_size"
-        case profiles, scale, healthcheck
+        case profiles, scale, deploy, healthcheck
+    }
+
+    /// Containers to run: `scale`, else `deploy.replicas`, else one.
+    public var replicas: Int { max(1, scale ?? deploy?.replicas ?? 1) }
+}
+
+/// `deploy:` — the parts that map onto a single Mac: `replicas` and
+/// `resources.limits`; placement, update and rollback settings are Swarm's.
+public struct Deploy: Codable, Sendable {
+    public let replicas: Int?
+    public let resources: Resources?
+
+    public struct Resources: Codable, Sendable {
+        public let limits: Limits?
+    }
+
+    public struct Limits: Codable, Sendable {
+        public let cpus: ScalarValue?
+        public let memory: ScalarValue?
     }
 }
 

@@ -195,4 +195,108 @@ final class ComposePlannerTests: XCTestCase {
         let plain = try ComposePlanner().plan(parsed, projectName: "shop")
         XCTAssertFalse(try XCTUnwrap(plain.steps.first { $0.kind == .run }).arguments.contains { $0.contains("alias=") })
     }
+
+    // MARK: - Compose Specification: ports, replicas, top level
+
+    private func plan(_ yaml: String, localDomain: String? = nil) throws -> ComposePlan {
+        try ComposePlanner().plan(try ComposeParser(environment: [:]).parse(yaml), projectName: "web", localDomain: localDomain)
+    }
+
+    private func publishes(_ plan: ComposePlan, _ container: String) -> [String] {
+        guard let args = plan.steps.first(where: { $0.containerName == container })?.arguments else { return [] }
+        return args.indices.dropLast().filter { args[$0] == "--publish" }.map { args[$0 + 1] }
+    }
+
+    /// The short syntax forms of the spec's `ports` section.
+    func testPortShortSyntaxForms() {
+        func specs(_ text: String, replica: Int = 1) -> [String]? { try? PortMapping.parse(text).publishSpecs(replica: replica).get() }
+        XCTAssertEqual(specs("8000:8000"), ["8000:8000"])
+        XCTAssertEqual(specs("127.0.0.1:8001:8001"), ["127.0.0.1:8001:8001"])
+        XCTAssertEqual(specs("[::1]:6001:6001"), ["[::1]:6001:6001"])
+        XCTAssertEqual(specs("6060:6060/udp"), ["6060:6060/udp"])
+        XCTAssertEqual(specs("9090-9091:8080-8081"), ["9090:8080", "9091:8081"])
+        XCTAssertEqual(specs("127.0.0.1:5000-5001:5000-5001/udp"), ["127.0.0.1:5000:5000/udp", "127.0.0.1:5001:5001/udp"])
+        XCTAssertEqual(specs("8080-8081:80", replica: 2), ["8081:80"])
+        XCTAssertEqual(PortMapping.parse("8080-8081:80").publishSpecs(replica: 3), .failure(.rangeTooSmall(replica: 3)))
+        XCTAssertEqual(PortMapping.parse("3000").publishSpecs(), .failure(.noHostPort))
+        XCTAssertEqual(PortMapping.parse("3000-3005").publishSpecs(), .failure(.noHostPort))
+        XCTAssertEqual(PortMapping.parse("127.0.0.1::80").publishSpecs(), .failure(.noHostPort))
+        XCTAssertEqual(PortMapping.parse("9090-9092:8080-8081").publishSpecs(), .failure(.mismatchedRanges))
+        for bad in ["80:abc", "1:2:3:4", "8081-8080:80", "70000:80", "[::1:80:80"] {
+            XCTAssertEqual(PortMapping.parse(bad).publishSpecs(), .failure(.unparseable), bad)
+        }
+    }
+
+    /// The long syntax, with a published range and a string target.
+    func testPortLongSyntax() throws {
+        let p = try plan("""
+        services:
+          web:
+            image: nginx
+            ports:
+              - name: web
+                target: 80
+                host_ip: 127.0.0.1
+                published: "8080"
+                protocol: tcp
+                app_protocol: http
+                mode: host
+              - target: "443"
+                published: 8083-9000
+        """)
+        XCTAssertEqual(publishes(p, "web-web"), ["127.0.0.1:8080:80/tcp", "8083:443"])
+    }
+
+    /// `deploy.replicas` with a host range: one port each, no collision
+    /// warning, and only the first replica takes the service's DNS name.
+    func testReplicasShareAHostRange() throws {
+        let p = try plan("""
+        version: '3.8'
+        services:
+          presentation:
+            image: nginx
+            ports:
+              - "8080-8081:80"
+            deploy:
+              replicas: 2
+              resources:
+                limits:
+                  cpus: "2"
+                  memory: 512M
+        """, localDomain: "test")
+        XCTAssertEqual(publishes(p, "web-presentation-1"), ["8080:80"])
+        XCTAssertEqual(publishes(p, "web-presentation-2"), ["8081:80"])
+        XCTAssertFalse(p.warnings.contains { $0.message.contains("collide") })
+        let runs = p.steps.filter { $0.kind == .run }
+        XCTAssertEqual(runs.filter { $0.arguments.contains { $0.contains("alias=presentation.web.test") } }.count, 1)
+        XCTAssertTrue(adjacent(runs[0].arguments, "--cpus", "2"))
+        XCTAssertTrue(runs[0].arguments.contains("--memory"))
+        let version = try XCTUnwrap(p.warnings.first { $0.field == "version" })
+        XCTAssertNil(version.service)
+        XCTAssertEqual(version.severity, .info)
+    }
+
+    /// Fixed host ports with replicas collide; `scale` wins over a different
+    /// `deploy.replicas`; unsupported top-level keys are reported.
+    func testReplicaAndTopLevelWarnings() throws {
+        let p = try plan("""
+        x-common: &common
+          image: nginx
+        secrets:
+          token:
+            file: ./token
+        services:
+          app:
+            <<: *common
+            scale: 3
+            ports: ["8080:80"]
+            deploy:
+              replicas: 2
+        """)
+        XCTAssertEqual(p.steps.filter { $0.kind == .run }.count, 3)
+        XCTAssertTrue(p.warnings.contains { $0.field == "ports" && $0.message.contains("collide") })
+        XCTAssertTrue(p.warnings.contains { $0.field == "scale" && $0.severity == .partial })
+        XCTAssertTrue(p.warnings.contains { $0.field == "secrets" && $0.service == nil && $0.severity == .unsupported })
+        XCTAssertFalse(p.warnings.contains { $0.field.hasPrefix("x-") || $0.field == "version" })
+    }
 }

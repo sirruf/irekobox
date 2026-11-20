@@ -166,8 +166,14 @@ enum CreateMapping {
     /// compose service's `web.shop.test`), registered as a runtime alias.
     /// `dockerSocket`: our API's socket, given to a container that mounts
     /// the Docker socket. `volumeSync`: sync modes of named volumes, by name.
+    /// `rangePorts`: the port chosen for each binding with a host port range
+    /// (``HostPortRanges``), by ``rangeKey(_:_:)``.
+    /// Key of one binding in `rangePorts`: container port key and its index.
+    static func rangeKey(_ key: String, _ index: Int) -> String { "\(key)#\(index)" }
+
     static func arguments(_ request: CreateRequest, name: String, platform: String?, dnsName: String? = nil,
                           dockerSocket: String? = nil, volumeSync: [String: String] = [:],
+                          rangePorts: [String: Int] = [:],
                           freePort: () throws -> Int) throws -> Result {
         guard let image = request.Image, !image.isEmpty else {
             throw DockerAPIError.badParameter("config cannot be empty in order to create a container")
@@ -274,11 +280,14 @@ enum CreateMapping {
         for key in (host?.PortBindings ?? [:]).keys.sorted() {
             let (port, proto) = try containerPort(key)
             let bindings = (host?.PortBindings?[key] ?? nil) ?? [CreateRequest.PortBinding(HostIp: nil, HostPort: nil)]
-            for binding in bindings.isEmpty ? [CreateRequest.PortBinding(HostIp: nil, HostPort: nil)] : bindings {
+            for (index, binding) in (bindings.isEmpty ? [CreateRequest.PortBinding(HostIp: nil, HostPort: nil)] : bindings).enumerated() {
                 // Empty or "0": any free port (Testcontainers sends "0").
-                let hostPort = try binding.HostPort.flatMap { $0.isEmpty || $0 == "0" ? nil : $0 } ?? String(freePort())
-                guard !hostPort.contains("-") else {
-                    throw DockerAPIError.badParameter("host port ranges are not supported: \(hostPort)")
+                var hostPort = try binding.HostPort.flatMap { $0.isEmpty || $0 == "0" ? nil : $0 } ?? String(freePort())
+                if hostPort.contains("-") {
+                    guard let chosen = rangePorts[rangeKey(key, index)] else {
+                        throw DockerAPIError.badParameter("invalid host port range: \(hostPort)")
+                    }
+                    hostPort = String(chosen)
                 }
                 var spec = ""
                 if let ip = binding.HostIp, !ip.isEmpty, ip != "0.0.0.0", ip != "::" { spec += "\(ip):" }

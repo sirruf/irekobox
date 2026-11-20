@@ -22,7 +22,7 @@ public struct ComposePlanner: Sendable {
         }
 
         var steps: [PlanStep] = []
-        var warnings: [PlanWarning] = []
+        var warnings = topLevelWarnings(parsed.topLevelKeys)
 
         // 2. Networks: a project default plus any explicit, non-external networks used.
         let defaultNetwork = "\(project)-default"
@@ -71,9 +71,14 @@ public struct ComposePlanner: Sendable {
             }
             guard let image = runImage else { throw ComposePlanError.missingImage(service: name) }
 
-            let replicas = max(1, service.scale ?? 1)
-            if replicas > 1, service.ports?.isEmpty == false {
+            let replicas = service.replicas
+            if let scale = service.scale, let deployed = service.deploy?.replicas, scale != deployed {
                 warnings.append(PlanWarning(service: name, field: "scale",
+                    message: String(localized: "`scale` (\(scale)) and `deploy.replicas` (\(deployed)) differ; `scale` is used."),
+                    severity: .partial))
+            }
+            if replicas > 1, (service.ports ?? []).contains(where: { !$0.fitsReplicas(replicas) }) {
+                warnings.append(PlanWarning(service: name, field: "ports",
                     message: String(localized: "Scaled service publishes ports; host ports will collide across replicas."),
                     severity: .partial))
             }
@@ -83,7 +88,7 @@ public struct ComposePlanner: Sendable {
                     ? "\(service.containerName ?? "\(project)-\(name)")-\(index)"
                     : (service.containerName ?? "\(project)-\(name)")
                 let (args, runWarnings) = runArguments(
-                    service: service, serviceName: name, containerName: containerName,
+                    service: service, serviceName: name, containerName: containerName, replica: index,
                     image: image, project: project, defaultNetwork: defaultNetwork, file: file,
                     extraLabels: extraRunLabels, localDomain: localDomain
                 )
@@ -107,7 +112,7 @@ public struct ComposePlanner: Sendable {
     }
 
     private func runArguments(
-        service: Service, serviceName: String, containerName: String,
+        service: Service, serviceName: String, containerName: String, replica: Int = 1,
         image: String, project: String, defaultNetwork: String, file: ComposeFile,
         extraLabels: [String: String] = [:], localDomain: String? = nil
     ) -> ([String], [PlanWarning]) {
@@ -121,8 +126,9 @@ public struct ComposePlanner: Sendable {
         }
 
         // Networks. With a local DNS domain the first one carries the name
-        // `<service>.<project>.<domain>`, reachable from the Mac.
-        let dnsName = localDomain.flatMap { Self.dnsName(service: serviceName, project: project, domain: $0) }
+        // `<service>.<project>.<domain>`, reachable from the Mac. The runtime
+        // gives a name once, so only the first replica has it.
+        let dnsName = replica == 1 ? localDomain.flatMap { Self.dnsName(service: serviceName, project: project, domain: $0) } : nil
         var networks: [String] = []
         if let names = service.networks?.names, !names.isEmpty {
             networks = names.map { networkName($0, project: project, file: file) }
@@ -146,18 +152,25 @@ public struct ComposePlanner: Sendable {
 
         // Ports
         for port in service.ports ?? [] {
-            guard port.target != nil else {
+            switch port.publishSpecs(replica: replica) {
+            case .success(let specs):
+                for spec in specs { args += ["--publish", spec] }
+            case .failure(.unparseable):
                 warnings.append(PlanWarning(service: serviceName, field: "ports",
-                    message: String(localized: "Unsupported port spec `\(port.raw ?? "")` (e.g. a range); skipped."), severity: .partial))
-                continue
-            }
-            guard port.published != nil else {
+                    message: String(localized: "Invalid port spec `\(port.raw ?? port.shortSyntax)`; skipped."), severity: .partial))
+            case .failure(.noHostPort):
                 warnings.append(PlanWarning(service: serviceName, field: "ports",
                     message: String(localized: "Port `\(port.shortSyntax)` has no host mapping; `container` needs a host port; skipped."),
                     severity: .partial))
-                continue
+            case .failure(.mismatchedRanges):
+                warnings.append(PlanWarning(service: serviceName, field: "ports",
+                    message: String(localized: "Port `\(port.shortSyntax)`: host and container ranges must be the same length; skipped."),
+                    severity: .partial))
+            case .failure(.rangeTooSmall(let replica)):
+                warnings.append(PlanWarning(service: serviceName, field: "ports",
+                    message: String(localized: "Port `\(port.shortSyntax)`: the host range has no port left for replica \(replica); skipped."),
+                    severity: .partial))
             }
-            args += ["--publish", port.shortSyntax]
         }
 
         // Volumes
@@ -175,8 +188,9 @@ public struct ComposePlanner: Sendable {
             }
         }
 
-        if let mem = service.memLimit { args += ["--memory", normalizeMemory(mem)] }
-        if let cpus = service.cpus?.stringValue {
+        let limits = service.deploy?.resources?.limits
+        if let mem = service.memLimit ?? limits?.memory?.stringValue { args += ["--memory", normalizeMemory(mem)] }
+        if let cpus = service.cpus?.stringValue ?? limits?.cpus?.stringValue {
             args += ["--cpus", cpus]
             if cpus.contains(".") {
                 warnings.append(PlanWarning(service: serviceName, field: "cpus",
@@ -288,7 +302,7 @@ public struct ComposePlanner: Sendable {
         "healthcheck": String(localized: "run by the background helper; unhealthy containers are reported"),
         "profiles": String(localized: "selects which services start"),
         "scale": String(localized: "launches N containers"),
-        "deploy": String(localized: "only `resources.limits` honored; placement/replicas partial"),
+        "deploy": String(localized: "`replicas` and `resources.limits` honored; other settings are Swarm's and ignored"),
     ]
     private static let partial: [String: String] = [
         "hostname": String(localized: "no `--hostname`; defaults to the container name"),
@@ -297,6 +311,29 @@ public struct ComposePlanner: Sendable {
         "expose": String(localized: "informational; intra-network reachability is implicit"),
         "sysctls": String(localized: "no `run` flag"),
     ]
+
+    /// Top-level keys of the Compose Specification, and what happens to
+    /// those Irekobox doesn't run. `x-` extensions are for the file's own use.
+    private static let topLevelHandled: Set<String> = ["name", "services", "networks", "volumes"]
+    private static let topLevelUnsupported: Set<String> = ["configs", "secrets", "include", "models"]
+
+    func topLevelWarnings(_ keys: Set<String>) -> [PlanWarning] {
+        var result: [PlanWarning] = []
+        for key in keys.sorted() where !Self.topLevelHandled.contains(key) && !key.hasPrefix("x-") {
+            if key == "version" {
+                result.append(PlanWarning(service: nil, field: key,
+                    message: String(localized: "Obsolete in the Compose Specification and ignored; remove it to avoid confusion."),
+                    severity: .info))
+            } else if Self.topLevelUnsupported.contains(key) {
+                result.append(PlanWarning(service: nil, field: key,
+                    message: String(localized: "Not supported by Irekobox yet; ignored."), severity: .unsupported))
+            } else {
+                result.append(PlanWarning(service: nil, field: key,
+                    message: String(localized: "Not part of the Compose Specification; ignored."), severity: .unsupported))
+            }
+        }
+        return result
+    }
 
     private func classify(_ keys: Set<String>, service: String) -> [PlanWarning] {
         var result: [PlanWarning] = []

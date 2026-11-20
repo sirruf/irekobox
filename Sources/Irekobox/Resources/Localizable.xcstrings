@@ -23407,6 +23407,34 @@
         }
       }
     },
+    "Invalid port spec `%@`; skipped." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ungültige Port-Angabe `%@`; übersprungen."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無効なポート指定 `%@` です。スキップしました。"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Неверное описание порта `%@`; пропущено."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无效的端口格式 `%@`；已跳过。"
+          }
+        }
+      }
+    },
     "Invalid variable name" : {
       "localizations" : {
         "de" : {
@@ -31633,6 +31661,34 @@
         }
       }
     },
+    "Not part of the Compose Specification; ignored." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht Teil der Compose-Spezifikation; wird ignoriert."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compose 仕様に含まれていません。無視されます。"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не входит в спецификацию Compose; игнорируется."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不属于 Compose 规范；已忽略。"
+          }
+        }
+      }
+    },
     "Not reachable: no service" : {
       "localizations" : {
         "de" : {
@@ -31853,6 +31909,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "未启动"
+          }
+        }
+      }
+    },
+    "Not supported by Irekobox yet; ignored." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Von Irekobox noch nicht unterstützt; wird ignoriert."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Irekobox ではまだサポートされていません。無視されます。"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Irekobox пока это не поддерживает; игнорируется."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Irekobox 暂不支持；已忽略。"
           }
         }
       }
@@ -32560,6 +32644,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "容器数量。"
+          }
+        }
+      }
+    },
+    "Obsolete in the Compose Specification and ignored; remove it to avoid confusion." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In der Compose-Spezifikation veraltet und wird ignoriert; entfernen, um Verwirrung zu vermeiden."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compose 仕様では廃止されており、無視されます。混乱を避けるため削除してください。"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Устарело в спецификации Compose и игнорируется; удалите, чтобы не путаться."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在 Compose 规范中已废弃并被忽略；请删除以免混淆。"
           }
         }
       }
@@ -35432,6 +35544,62 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "端口 `%@` 没有主机映射；`container` 需要主机端口；已跳过。"
+          }
+        }
+      }
+    },
+    "Port `%@`: host and container ranges must be the same length; skipped." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Port `%@`: Host- und Container-Bereich müssen gleich lang sein; übersprungen."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ポート `%@`：ホストとコンテナの範囲は同じ長さである必要があります。スキップしました。"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Порт `%@`: диапазоны хоста и контейнера должны быть одной длины; пропущено."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "端口 `%@`：主机与容器的端口范围长度必须相同；已跳过。"
+          }
+        }
+      }
+    },
+    "Port `%@`: the host range has no port left for replica %lld; skipped." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Port `%1$@`: Im Host-Bereich ist kein Port für Replik %2$lld frei; übersprungen."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ポート `%1$@`：ホストの範囲にレプリカ %2$lld 用のポートが残っていません。スキップしました。"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Порт `%1$@`: в диапазоне хоста не осталось порта для реплики %2$lld; пропущено."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "端口 `%1$@`：主机范围内已没有可供副本 %2$lld 使用的端口；已跳过。"
           }
         }
       }
@@ -47555,34 +47723,6 @@
         }
       }
     },
-    "Unsupported port spec `%@` (e.g. a range); skipped." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nicht unterstützte Port-Angabe `%@` (z. B. ein Bereich); übersprungen."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "サポートされていないポート指定 `%@`（範囲など）です。スキップしました。"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Неподдерживаемое описание порта `%@` (например, диапазон); пропущено."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "不支持的端口格式 `%@`（例如范围）；已跳过。"
-          }
-        }
-      }
-    },
     "Unused" : {
       "localizations" : {
         "de" : {
@@ -51158,6 +51298,62 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "`container --entrypoint` 只接受一个值；额外的参数会附加到命令中。"
+          }
+        }
+      }
+    },
+    "`replicas` and `resources.limits` honored; other settings are Swarm's and ignored" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "`replicas` und `resources.limits` werden berücksichtigt; andere Einstellungen gehören zu Swarm und werden ignoriert"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "`replicas` と `resources.limits` に対応しています。その他の設定は Swarm 用のため無視されます"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "`replicas` и `resources.limits` учитываются; остальные настройки относятся к Swarm и игнорируются"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "支持 `replicas` 和 `resources.limits`；其他设置属于 Swarm，将被忽略"
+          }
+        }
+      }
+    },
+    "`scale` (%lld) and `deploy.replicas` (%lld) differ; `scale` is used." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "`scale` (%1$lld) und `deploy.replicas` (%2$lld) unterscheiden sich; `scale` wird verwendet."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "`scale`（%1$lld）と `deploy.replicas`（%2$lld）が異なります。`scale` を使用します。"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "`scale` (%1$lld) и `deploy.replicas` (%2$lld) различаются; используется `scale`."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "`scale`（%1$lld）与 `deploy.replicas`（%2$lld）不一致；将使用 `scale`。"
           }
         }
       }
@@ -55341,34 +55537,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "仅会重新创建 %@"
-          }
-        }
-      }
-    },
-    "only `resources.limits` honored; placement/replicas partial" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "nur `resources.limits` wird berücksichtigt; placement/replicas teilweise"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "`resources.limits` のみ有効。placement/replicas は一部のみ"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "учитывается только `resources.limits`; placement/replicas — частично"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "仅支持 `resources.limits`；placement/replicas 部分支持"
           }
         }
       }

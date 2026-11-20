@@ -7,6 +7,14 @@ public struct ParsedCompose: Sendable {
     public let file: ComposeFile
     /// service name → set of keys present in the source YAML.
     public let rawServiceKeys: [String: Set<String>]
+    /// Top-level keys present in the source YAML (`version`, `secrets`, …).
+    public let topLevelKeys: Set<String>
+
+    public init(file: ComposeFile, rawServiceKeys: [String: Set<String>], topLevelKeys: Set<String> = []) {
+        self.file = file
+        self.rawServiceKeys = rawServiceKeys
+        self.topLevelKeys = topLevelKeys
+    }
 }
 
 public enum ComposeParseError: Error, LocalizedError {
@@ -41,7 +49,8 @@ public struct ComposeParser: Sendable {
         }
         guard !file.services.isEmpty else { throw ComposeParseError.noServices }
 
-        return ParsedCompose(file: file, rawServiceKeys: Self.rawServiceKeys(interpolated))
+        return ParsedCompose(file: file, rawServiceKeys: Self.rawServiceKeys(interpolated),
+                             topLevelKeys: Self.topLevelKeys(interpolated))
     }
 
     public func parse(contentsOf url: URL) throws -> ParsedCompose {
@@ -49,6 +58,11 @@ public struct ComposeParser: Sendable {
     }
 
     // MARK: - Raw service keys (for warnings)
+
+    static func topLevelKeys(_ yaml: String) -> Set<String> {
+        guard let mapping = (try? Yams.compose(yaml: yaml))??.mapping else { return [] }
+        return Set(mapping.keys.compactMap(\.string))
+    }
 
     static func rawServiceKeys(_ yaml: String) -> [String: Set<String>] {
         guard let node = try? Yams.compose(yaml: yaml),

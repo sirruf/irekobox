@@ -143,10 +143,65 @@ final class ContainersAPITests: XCTestCase {
             return await group.reduce(into: [String?]()) { $0.append($1) }
         }
         XCTAssertEqual(names.compactMap { $0 }, ["presentation.web.test"])
-        await DNSNameClaims.shared.release("presentation.web.test")
+        await CreateClaims.shared.release([CreateClaims.dnsKey("presentation.web.test")])
         let again = await ContainersAPI.serviceDNSName(config, engine)
         XCTAssertEqual(again, "presentation.web.test")
-        await DNSNameClaims.shared.release("presentation.web.test")
+        await CreateClaims.shared.release([CreateClaims.dnsKey("presentation.web.test")])
+    }
+
+    private func rangeRequest(_ hostPort: String, ip: String? = nil) throws -> CreateRequest {
+        let ipField = ip.map { #""HostIp":"\#($0)","# } ?? ""
+        return try JSONDecoder().decode(CreateRequest.self, from: Data(#"""
+            {"Image":"nginx","HostConfig":{"PortBindings":{"80/tcp":[{\#(ipField)"HostPort":"\#(hostPort)"}]}}}
+            """#.utf8))
+    }
+
+    /// `"8080-8081:80"` with two replicas: each takes its own port of the
+    /// range while both are being created; a third finds none left.
+    func testParallelReplicasTakeDifferentPortsOfARange() async throws {
+        let engine = FakeEngine(containers: [])
+        let request = try rangeRequest("18080-18081")
+        let results = try await withThrowingTaskGroup(of: HostPortRanges.Resolved.self) { group in
+            for _ in 0..<2 { group.addTask { try await HostPortRanges.resolve(request, engine) { _, _, _ in true } } }
+            return try await group.reduce(into: [HostPortRanges.Resolved]()) { $0.append($1) }
+        }
+        let key = CreateMapping.rangeKey("80/tcp", 0)
+        XCTAssertEqual(Set(results.compactMap { $0.ports[key] }), [18080, 18081])
+        do {
+            _ = try await HostPortRanges.resolve(request, engine) { _, _, _ in true }
+            XCTFail("the range is used up")
+        } catch let error as DockerAPIError {
+            XCTAssertTrue(error.message.contains("18080-18081"), error.message)
+        }
+        for result in results { await CreateClaims.shared.release(result.claims) }
+        let after = try await HostPortRanges.resolve(request, engine) { _, _, _ in true }
+        XCTAssertEqual(after.ports[key], 18080)
+        await CreateClaims.shared.release(after.claims)
+    }
+
+    /// A port something on the Mac already listens on is skipped.
+    func testARangeSkipsAPortInUseOnTheMac() async throws {
+        let engine = FakeEngine(containers: [])
+        var asked: [String] = []
+        let resolved = try await HostPortRanges.resolve(try rangeRequest("18090-18092", ip: "127.0.0.1"), engine) { port, proto, ip in
+            asked.append("\(ip ?? "*"):\(port)/\(proto)")
+            return port != 18090
+        }
+        XCTAssertEqual(resolved.ports[CreateMapping.rangeKey("80/tcp", 0)], 18091)
+        XCTAssertEqual(asked, ["127.0.0.1:18090/tcp", "127.0.0.1:18091/tcp"])
+        await CreateClaims.shared.release(resolved.claims)
+    }
+
+    func testABadRangeIsRefused() async throws {
+        let engine = FakeEngine(containers: [])
+        for text in ["9000-8000", "0-10", "80-70000", "a-b"] {
+            do {
+                _ = try await HostPortRanges.resolve(try rangeRequest(text), engine) { _, _, _ in true }
+                XCTFail(text)
+            } catch let error as DockerAPIError {
+                XCTAssertEqual(error.status, 400, text)
+            }
+        }
     }
 
     func testDockerIDsAreStableHexAndDifferPerContainer() throws {
