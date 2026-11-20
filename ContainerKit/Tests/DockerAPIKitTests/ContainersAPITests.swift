@@ -18,7 +18,8 @@ private final class FakeEngine: DockerBackend, @unchecked Sendable {
     private func record(_ call: String) { lock.withLock { calls.append(call) } }
 
     func systemStatus() async throws -> SystemStatus? { nil }
-    func systemProperties() async throws -> String { "" }
+    var properties = ""
+    func systemProperties() async throws -> String { properties }
     func listContainers(all: Bool) async throws -> [Container] { containers }
     func listImages() async throws -> [ContainerImage] { images }
     func startContainer(_ id: String) async throws { record("start \(id)") }
@@ -128,6 +129,25 @@ final class ContainersAPITests: XCTestCase {
     }
 
     // MARK: - IDs and states
+
+    /// Compose creates replicas in parallel; only one may take the service's
+    /// local name, or the runtime refuses the other ("alias(es) already exist").
+    func testParallelReplicasClaimTheServiceNameOnce() async throws {
+        let engine = FakeEngine(containers: [])
+        engine.properties = "[dns]\ndomain = \"test\"\n"
+        let config = try JSONDecoder().decode(CreateRequest.self, from: Data(#"""
+            {"Image":"nginx","Labels":{"com.docker.compose.service":"presentation","com.docker.compose.project":"web"}}
+            """#.utf8))
+        let names = await withTaskGroup(of: String?.self) { group in
+            for _ in 0..<4 { group.addTask { await ContainersAPI.serviceDNSName(config, engine) } }
+            return await group.reduce(into: [String?]()) { $0.append($1) }
+        }
+        XCTAssertEqual(names.compactMap { $0 }, ["presentation.web.test"])
+        await DNSNameClaims.shared.release("presentation.web.test")
+        let again = await ContainersAPI.serviceDNSName(config, engine)
+        XCTAssertEqual(again, "presentation.web.test")
+        await DNSNameClaims.shared.release("presentation.web.test")
+    }
 
     func testDockerIDsAreStableHexAndDifferPerContainer() throws {
         let containers = try fixture()

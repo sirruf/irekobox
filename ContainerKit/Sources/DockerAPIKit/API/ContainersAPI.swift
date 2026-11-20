@@ -268,8 +268,12 @@ public enum ContainersAPI {
                              _ backend: DockerBackend, fillVolumes: Bool = false,
                              dockerSocket: String? = nil) async throws -> [String] {
         let (volumeSync, syncWarnings) = await volumeSyncModes(config, backend)
+        // Held until the runtime has the container, so parallel replicas of
+        // one compose service don't both take its name.
+        let dnsName = await serviceDNSName(config, backend)
+        defer { if let dnsName { Task { await DNSNameClaims.shared.release(dnsName) } } }
         var mapping = try CreateMapping.arguments(config, name: name, platform: platform,
-                                                  dnsName: await serviceDNSName(config, backend),
+                                                  dnsName: dnsName,
                                                   dockerSocket: dockerSocket, volumeSync: volumeSync,
                                                   freePort: FreePort.pick)
         mapping.warnings += syncWarnings
@@ -544,16 +548,19 @@ public enum ContainersAPI {
 
     /// `web.shop.<domain>` for a compose service, when a local domain is set
     /// and no other container holds that name (aliases are unique in the
-    /// runtime: a duplicate would fail the create).
+    /// runtime: a duplicate would fail the create). A name it returns is
+    /// claimed in `DNSNameClaims`; the caller releases it once created.
     static func serviceDNSName(_ config: CreateRequest, _ backend: DockerBackend) async -> String? {
         guard let labels = config.Labels, let service = labels["com.docker.compose.service"],
               let project = labels["com.docker.compose.project"],
               let properties = try? await backend.systemProperties(),
               let domain = LocalDomain.parse(properties: properties),
-              let name = LocalDomain.serviceName(service: service, project: project, domain: domain) else { return nil }
+              let name = LocalDomain.serviceName(service: service, project: project, domain: domain),
+              await DNSNameClaims.shared.claim(name) else { return nil }
         let taken = (try? await backend.listContainers(all: true))?.contains { container in
             container.configuration.networks.contains { $0.options?.aliases?.contains(name) == true }
         } ?? true
+        if taken { await DNSNameClaims.shared.release(name) }
         return taken ? nil : name
     }
 
@@ -600,4 +607,17 @@ public actor ExitWaits {
     }
 
     func run(_ name: String) -> Task<ContainerExit?, Never>? { runs[name] }
+}
+
+/// Local DNS names being given to containers right now. The runtime takes
+/// each alias once; compose creates replicas in parallel, so the check of
+/// existing containers alone lets two of them pick the same name.
+actor DNSNameClaims {
+    static let shared = DNSNameClaims()
+    private var names: Set<String> = []
+
+    /// True when `name` was free here and is now claimed.
+    func claim(_ name: String) -> Bool { names.insert(name).inserted }
+
+    func release(_ name: String) { names.remove(name) }
 }
